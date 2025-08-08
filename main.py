@@ -1,120 +1,139 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Tuğrul Bey Roleplay Agent - Sequential Thinking Mimarisi
-Gemini ile direkt düşünme + detaylı web arama entegrasyonu
+Mini Microcosmos - AI Persona Simulator
+Sequential Thinking mimarisi ile güvenli ve yapılandırılmış persona simülasyonu
 """
 
 import json
 import os
 import asyncio
 import sys
+import locale
+from datetime import datetime
+from dotenv import load_dotenv
 import google.generativeai as genai
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
-# Encoding fix - daha kapsamlı
-import locale
-import sys
+# Environment değişkenlerini yükle
+load_dotenv()
 
-try:
-    locale.setlocale(locale.LC_ALL, 'tr_TR.UTF-8')
-except:
+
+# Encoding yapılandırması
+def setup_encoding():
+    """Sistem encoding'ini güvenli şekilde yapılandır"""
     try:
-        locale.setlocale(locale.LC_ALL, 'C.UTF-8')
+        locale.setlocale(locale.LC_ALL, 'tr_TR.UTF-8')
     except:
-        pass
+        try:
+            locale.setlocale(locale.LC_ALL, 'C.UTF-8')
+        except:
+            pass
 
-# Stdin/stdout encoding fix
-if hasattr(sys.stdin, 'reconfigure'):
-    try:
-        sys.stdin.reconfigure(encoding='utf-8', errors='ignore')
-        sys.stdout.reconfigure(encoding='utf-8', errors='ignore')
-        sys.stderr.reconfigure(encoding='utf-8', errors='ignore')
-    except:
-        pass
+    # Stdin/stdout encoding
+    if hasattr(sys.stdin, 'reconfigure'):
+        try:
+            sys.stdin.reconfigure(encoding='utf-8', errors='ignore')
+            sys.stdout.reconfigure(encoding='utf-8', errors='ignore')
+            sys.stderr.reconfigure(encoding='utf-8', errors='ignore')
+        except:
+            pass
 
-# Environment encoding fix
-os.environ['PYTHONIOENCODING'] = 'utf-8'
-
-# API Keys
-SMITHERY_API_KEY = "65ff06a6-0b17-4c02-867c-965598903696"
-SMITHERY_PROFILE = "regional-leopon-MBWvnk"
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
 
 
-class TugrulBeyAgent:
-    def __init__(self):
-        # Birden fazla API key tanımla
-        self.api_keys = [
-            "AIzaSyDaGj1uqJw3hDvTIAOh6pmy_Ql3WHxw-O0",
-            "AIzaSyBEexknCKKdGbVVa1X7UAckurnhARnXVBk",
-            "AIzaSyCklJ6T0IDgjuH7N8fbWl6AQtJuCEGbRA8",
-            "AIzaSyCjREiQf2zZEiG-T0AwiD1PkInMJacl5oI",
-            "AIzaSyDxl0sdN8W4sZQKDVL6mXVW5ZSYT1UcoYw",
-            "AIzaSyAOwk3DliVQqBqsykovy_sdqVjJYAnGDeM",
-            "AIzaSyDEXARIukI2aDb3-JcwWygi6yvIz6Mk3hU",
-        ]
+class PersonaAgent:
+    def __init__(self, persona_name="tugrul_bey"):
+        """
+        Persona tabanlı AI agent
+        Args:
+            persona_name: personas/ klasöründeki JSON dosya adı
+        """
+        setup_encoding()
 
+        # API keys'leri environment'tan al
+        self.api_keys = self._load_api_keys()
         self.current_api_index = 0
 
-        # İlk API ile başla
-        genai.configure(api_key=self.api_keys[self.current_api_index])
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
+        # Smithery API yapılandırması
+        self.smithery_api_key = os.getenv("SMITHERY_API_KEY")
+        self.smithery_profile = os.getenv("SMITHERY_PROFILE")
 
-        # Persona'yı yükle - encoding sorunu çözümü
-        try:
-            with open('personas/tugrul_bey.json', 'r', encoding='utf-8') as f:
-                self.persona = json.load(f)
-        except FileNotFoundError:
-            print("❌ tugrul_bey.json dosyası bulunamadı! Fallback persona kullanılıyor...")
-            # Basit fallback persona
-            self.persona = {
-                "name": "Tuğrul Bey",
-                "bio": [
-                    "40'lı yaşlarında, lise mezunu, aylık geliri orta seviyededir, esnaftır",
-                    "Genç yaşta evlenmiştir, 2 çocuğu vardır",
-                    "Dini inançlarına ve İslam'a bağlı",
-                    "Kendini Milliyetçi, Ülkücü olarak tanımlar",
-                    "Mültecilerden oldukça rahatsız"
-                ],
-                "style": {
-                    "chat": [
-                        "Selamın aleyküm, eyvallah gibi kelimeler kullanır",
-                        "Ağırbaşlıdır",
-                        "Argo konuşur",
-                        "Milliyetçi bakış açısıyla yorumlar yapar"
-                    ]
-                },
-                "lore": [
-                    "Sosyal medyadan gündemi takip eder",
-                    "Mahalle kahvesinde sürekli güncel olaylar hakkında ahkam keser",
-                    "Mülteci karşıtı görüşleri var",
-                    "15 Temmuz Darbe Girişiminde sokağa inmiştir",
-                    "Ekonomik sıkıntılar çektiği için tek sosyalleşme alanı kahvehanedir"
-                ],
-                "knowledge": [
-                    "Sosyal medyada popüler konular takip eder",
-                    "Sağcı haber siteleri ve WhatsApp gruplarından bilgi edinir",
-                    "Güncel siyasi gelişmeleri milliyetçi açıdan değerlendirir"
-                ]
-            }
-        except Exception as e:
-            print(f"⚠️  Persona yükleme hatası: {e}")
-            self.persona = {"name": "Tuğrul Bey", "bio": ["Esnaf"], "style": {"chat": ["Normal konuşur"]}, "lore": [""],
-                            "knowledge": [""]}
+        if not self.smithery_api_key or not self.smithery_profile:
+            print("⚠️ SMITHERY API bilgileri .env dosyasında bulunamadı!")
+            print("💡 Web arama işlevselliği çalışmayabilir")
+
+        # Gemini modelini başlat
+        self._initialize_model()
+
+        # Persona'yı yükle
+        self.persona = self._load_persona(persona_name)
 
         # Konuşma geçmişi
         self.conversation_history = []
 
-    def switch_api_key(self):
-        """API key değiştir"""
-        self.current_api_index = (self.current_api_index + 1) % len(self.api_keys)
+    def _load_api_keys(self):
+        """Environment'tan API keys'leri güvenli şekilde yükle"""
+        api_keys = []
+
+        # Tek key varsa
+        single_key = os.getenv("GEMINI_API_KEY")
+        if single_key:
+            api_keys.append(single_key)
+
+        # Çoklu key varsa (GEMINI_API_KEY_1, GEMINI_API_KEY_2, ...)
+        i = 1
+        while True:
+            key = os.getenv(f"GEMINI_API_KEY_{i}")
+            if key:
+                api_keys.append(key)
+                i += 1
+            else:
+                break
+
+        if not api_keys:
+            raise ValueError("❌ Hiçbir GEMINI API key bulunamadı! .env dosyasını kontrol edin.")
+
+        return api_keys
+
+    def _initialize_model(self):
+        """Gemini modelini başlat"""
         genai.configure(api_key=self.api_keys[self.current_api_index])
         self.model = genai.GenerativeModel('gemini-1.5-flash')
+
+    def _load_persona(self, persona_name):
+        """Persona JSON dosyasını yükle"""
+        try:
+            with open(f'personas/{persona_name}.json', 'r', encoding='utf-8') as f:
+                persona = json.load(f)
+                print(f"✅ {persona['name']} persona'sı yüklendi")
+                return persona
+        except FileNotFoundError:
+            print(f"❌ personas/{persona_name}.json dosyası bulunamadı!")
+            return self._get_fallback_persona(persona_name)
+        except Exception as e:
+            print(f"⚠️ Persona yükleme hatası: {e}")
+            return self._get_fallback_persona(persona_name)
+
+    def _get_fallback_persona(self, persona_name):
+        """Fallback persona"""
+        return {
+            "name": persona_name.replace('_', ' ').title(),
+            "bio": ["Genel bir persona"],
+            "style": {"chat": ["Normal konuşur"]},
+            "lore": [""],
+            "knowledge": [""]
+        }
+
+    def switch_api_key(self):
+        """API key'i değiştir"""
+        self.current_api_index = (self.current_api_index + 1) % len(self.api_keys)
+        self._initialize_model()
         print(f"🔄 API KEY DEĞİŞTİRİLDİ: #{self.current_api_index + 1}")
 
     def try_with_api_rotation(self, prompt, max_retries=None):
-        """API rotasyonu ile deneme yap"""
+        """API rotasyonu ile güvenli deneme"""
         if max_retries is None:
             max_retries = len(self.api_keys)
 
@@ -131,15 +150,14 @@ class TugrulBeyAgent:
                 else:
                     raise e
 
-        # Tüm API'ler dolu
-        return "Valla kardeşim, tüm sistemler meşgul. Biraz sonra tekrar dene."
+        return "Sistem yoğunluğu nedeniyle geçici olarak hizmet veremiyorum. Lütfen biraz sonra tekrar deneyin."
 
     def create_system_prompt(self):
-        """JSON'dan sistem promptu oluştur"""
-        bio_text = "\n- ".join(self.persona["bio"])
-        style_text = "\n- ".join(self.persona["style"]["chat"])
-        lore_text = "\n- ".join(self.persona["lore"][:15])  # Daha fazla detay
-        knowledge_text = "\n- ".join(self.persona["knowledge"][:8])  # Daha fazla detay
+        """Persona'dan sistem promptu oluştur"""
+        bio_text = "\n- ".join(self.persona.get("bio", ["Bilinmiyor"]))
+        style_text = "\n- ".join(self.persona.get("style", {}).get("chat", ["Normal konuşur"]))
+        lore_text = "\n- ".join(self.persona.get("lore", [""])[:15])
+        knowledge_text = "\n- ".join(self.persona.get("knowledge", [""])[:8])
 
         return f"""Sen {self.persona["name"]}'sin. Aşağıdaki kimliğin:
 
@@ -156,17 +174,16 @@ BİLGİN:
 - {knowledge_text}
 
 ÖNEMLİ KURALLAR:
+- Karakterine uygun davran
 - Güncel olayları web aramalarından öğreniyorsun
-- Haberleri analiz edip kendi görüşlerini belirtiyorsun
-- Milliyetçi bakış açınla olayları yorumlarsın
-- Detaylı bilgi verirsin ama çok uzun olmarsın
-- "Selamın aleyküm", "eyvallah" gibi kelimeler kullanırsın"""
+- Kendi görüşlerini belirt ama saygılı ol
+- Detaylı bilgi ver ama çok uzun olma"""
 
-    def simple_think(self, prompt: str, stage_name: str):
-        """Sequential Thinking mimarisi - Gemini ile direkt düşünme"""
-        print(f"🧠 {stage_name.upper()} DÜŞÜNÜLÜYOR (Sequential Thinking)...")
+    def sequential_think(self, prompt: str, stage_name: str):
+        """Sequential Thinking adımı"""
+        print(f"🧠 {stage_name.upper()} DÜŞÜNÜLÜYOR...")
 
-        thinking_prompt = f"""Sen Tuğrul Bey'sin. Aşağıdaki konuyu adım adım düşün ve analiz et:
+        thinking_prompt = f"""Sen {self.persona['name']}'sin. Aşağıdaki konuyu adım adım düşün:
 
 {prompt}
 
@@ -175,30 +192,27 @@ DÜŞÜNME SÜRECİN:
 2. Ne yapman gerekiyor?
 3. Kararın nedir?
 
-Tuğrul Bey karakterinde, kısa ve net düşünceni söyle (2-3 cümle):"""
+Kısa ve net düşünceni söyle (2-3 cümle):"""
 
         try:
-            response = self.model.generate_content(thinking_prompt)
-            thinking_result = response.text.strip()
-            print(f"💭 {stage_name.upper()} SONUCU: {thinking_result}")
-            return thinking_result
+            result = self.try_with_api_rotation(thinking_prompt)
+            print(f"💭 {stage_name.upper()} SONUCU: {result}")
+            return result
         except Exception as e:
             print(f"❌ {stage_name} düşünme hatası: {e}")
             fallback_responses = {
-                "SORU_ANALIZI": "Normal bir soru, Tuğrul Bey olarak cevap vereceğim.",
-                "ARAMA_KARARI": "Güncel konular için web araması yapmam gerekli.",
+                "SORU_ANALIZI": "Normal bir soru, karakterime uygun cevap vereceğim.",
+                "ARAMA_KARARI": "Güncel konular için web araması gerekebilir.",
                 "ARAMA_TERIMLERI": "Türkiye gündem haberleri",
-                "HABER_ANALIZI": "Bu haberleri milliyetçi bakış açımla değerlendireceğim.",
-                "CEVAP_PLANLAMA": "Detaylı ve samimi bir Tuğrul Bey cevabı vereceğim."
+                "HABER_ANALIZI": "Haberleri kendi perspektifimden değerlendireceğim.",
+                "CEVAP_PLANLAMA": "Detaylı ve samimi bir cevap vereceğim."
             }
             result = fallback_responses.get(stage_name, "Normal yaklaşım benimserim")
             print(f"💭 {stage_name.upper()} FALLBACK: {result}")
             return result
 
     def get_current_date(self):
-        """Bugünün tarihini al ve göster - basit versiyon"""
-        from datetime import datetime
-
+        """Güncel tarihi al"""
         try:
             current_time = datetime.now()
             date_str = current_time.strftime("%d %B %Y, %A")
@@ -206,293 +220,337 @@ Tuğrul Bey karakterinde, kısa ve net düşünceni söyle (2-3 cümle):"""
             return date_str
         except Exception as e:
             print(f"⚠️ Tarih alma hatası: {e}")
-            # Fallback tarih
-            fallback_date = "8 Aralık 2024, Pazar"
+            fallback_date = "Bilinmeyen Tarih"
             print(f"📅 FALLBACK TARİH: {fallback_date}")
             return fallback_date
 
-    def gundem_ozetleme_agent(self, raw_search_results: str):
-        """GÜNDEM ÖZETLEME AGENT - Arama sonuçlarını Tuğrul Bey için özetler"""
-        print(f"📰 GÜNDEM ÖZETLEME AGENT ÇALIŞIYOR...")
+    def summarize_comprehensive_news(self, raw_search_results: str, search_count: int, sites_count: int):
+        """Kapsamlı haber özetleme - çoklu kaynak analizi"""
+        print(f"📰 KAPSAMLI HABER ANALİZİ: {search_count} arama, {sites_count} site")
 
-        summary_prompt = f"""Sen bir GÜNDEM ÖZETLEME AGENT'sın. Görevin:
+        summary_prompt = f"""Sen profesyonel bir HABER ANALİZ UZMANISSIN. Görevin:
 
-1. Web arama sonuçlarını analiz et
-2. Hangi sitelere bakıldığını listele  
-3. En önemli 5-7 haber başlığını çıkar
-4. Her haberi 1-2 cümleyle özetle
-5. Tarih bilgilerini kontrol et
-6. Tuğrul Bey için anlaşılır hale getir
+{search_count} farklı aramadan ve {sites_count} farklı haber sitesinden toplanan verileri analiz et:
 
-ARAMA SONUÇLARI:
-{raw_search_results[:12000]}
+KAPSAMLI ARAMA SONUÇLARI:
+{raw_search_results[:20000]}
 
-ÖNEMLİ UYARI: Eğer arama sonuçları Temmuz 2025 ile ilgili değilse, bunu belirt!
+DETAYLI ANALİZ GEREKSİNİMLERİ:
+1. Hangi haber sitelerinden bilgi toplandığını tespit et
+2. En önemli 8-10 haber başlığını çıkar
+3. Her haberi 2-3 cümleyle detaylı özetle
+4. Tarih bilgilerini kontrol et ve grupla
+5. Haber kategorilerini belirle (ekonomi, siyaset, sosyal, vs.)
+6. Çelişkili bilgiler varsa belirt
+7. Eksik veya belirsiz konuları işaretle
 
 ÇIKTI FORMATI:
-=== GÜNDEM ÖZETİ ===
-📍 Bakılan Siteler: [site listesi]
-📊 Toplam Sonuç: [sayı] 
-📅 Tarih Uyarısı: [Eğer Temmuz 2025 değilse belirt]
+=== KAPSAMLI GÜNDEM ANALİZİ ===
+📊 Araştırma Kapsamı: {search_count} arama, {sites_count} farklı kaynak
+📍 Taranan Siteler: [tespit edilen site listesi]
+📅 Tarih Aralığı: [bulunan tarih aralığı]
+📋 Kategori Dağılımı: [ekonomi: X haber, siyaset: Y haber, vs.]
 
 📰 BAŞLICA HABERLER:
-1. [Başlık] - [1-2 cümle özet] - [Tarih]
-2. [Başlık] - [1-2 cümle özet] - [Tarih]
+1. [KATEGORİ] [Başlık] - [2-3 cümle detaylı özet] - [Kaynak] - [Tarih]
+2. [KATEGORİ] [Başlık] - [2-3 cümle detaylı özet] - [Kaynak] - [Tarih]
 ...
 
-Kısa ve öz anlat, tarih kontrolü yap:"""
+🔍 ANALİZ NOTLARI:
+- Çelişkili bilgiler: [varsa belirt]
+- Eksik konular: [belirt]
+- Güvenilirlik: [genel değerlendirme]
+
+Kapsamlı ve detaylı analiz yap:"""
 
         try:
             summary = self.try_with_api_rotation(summary_prompt)
             if not summary or "quota" in summary.lower():
-                # API quota problemi varsa basit özet yap
-                summary = f"""=== GÜNDEM ÖZETİ ===
-📍 Bakılan Siteler: [API quota problemi nedeniyle analiz edilemedi]
-📊 Toplam Sonuç: {len(raw_search_results)} karakter ham veri
-📅 Tarih Uyarısı: Tarih kontrolü yapılamadı (API quota)
+                return self._create_fallback_summary(raw_search_results, search_count, sites_count)
 
-📰 HAM VERİ ÖZET:
-{raw_search_results[:800]}..."""
-
-            print(f"✅ GÜNDEM ÖZETİ HAZIRLANDI")
-            print(f"📋 ÖZET İÇERİĞİ:\n{summary}")
-            print("-" * 50)
+            print("✅ KAPSAMLI HABER ANALİZİ TAMAMLANDI")
             return summary
-        except Exception as e:
-            print(f"❌ Gündem özetleme hatası: {e}")
-            fallback_summary = f"""=== GÜNDEM ÖZETİ ===
-📍 Bakılan Siteler: Analiz edilemedi
-📊 Toplam Sonuç: {len(raw_search_results)} karakter
-📅 Tarih Uyarısı: Tarih kontrolü başarısız
 
-📰 HAM VERİ:
-{raw_search_results[:1000]}..."""
-            print(f"📋 FALLBACK ÖZET: {fallback_summary}")
-            return fallback_summary
+        except Exception as e:
+            print(f"❌ Kapsamlı analiz hatası: {e}")
+            return self._create_fallback_summary(raw_search_results, search_count, sites_count)
+
+    def _create_fallback_summary(self, raw_data: str, search_count: int, sites_count: int):
+        """Fallback haber özeti"""
+        return f"""=== KAPSAMLI GÜNDEM ANALİZİ ===
+📊 Araştırma Kapsamı: {search_count} arama, {sites_count} site
+📍 Taranan Siteler: Analiz edilemedi (API quota)
+📅 Tarih Aralığı: Tespit edilemedi
+📋 Kategori Dağılımı: Belirlenemedi
+
+📰 HAM VERİ ÖZETİ:
+{raw_data[:2000]}...
+
+🔍 ANALİZ NOTLARI:
+- Sistem yoğunluğu nedeniyle detaylı analiz yapılamadı
+- Ham veriler mevcut, manuel inceleme gerekebilir"""
 
     async def search_web_detailed(self, keywords: str):
-        """Detaylı web araması + Gündem Özetleme + Sequential Thinking analizi"""
-        print(f"🔍 DETAYLI WEB ARAMASI BAŞLANIYOR...")
-        print(f"🎯 ARAMA TERİMLERİ: '{keywords}'")
+        """Kapsamlı web araması - 10+ site taraması"""
+        if not self.smithery_api_key or not self.smithery_profile:
+            print("❌ Web arama yapılandırması eksik")
+            return {
+                "raw_results": "",
+                "news_summary": "",
+                "analysis": "",
+                "current_date": self.get_current_date(),
+                "sites_count": 0,
+                "search_count": 0
+            }
 
-        # Bugünün tarihini al
+        print(f"🔍 KAPSAMLI WEB ARAMASI BAŞLANIYOR: '{keywords}'")
         current_date = self.get_current_date()
 
-        exa_url = f"https://server.smithery.ai/exa/mcp?api_key={SMITHERY_API_KEY}&profile={SMITHERY_PROFILE}"
+        exa_url = f"https://server.smithery.ai/exa/mcp?api_key={self.smithery_api_key}&profile={self.smithery_profile}"
 
         try:
             async with streamablehttp_client(exa_url) as (read_stream, write_stream, _):
                 async with ClientSession(read_stream, write_stream) as session:
                     await session.initialize()
 
-                    # Birden fazla arama yap daha iyi sonuçlar için
                     all_results = []
 
-                    # Ana arama
-                    print(f"🔍 1. ANA ARAMA: '{keywords}'")
-                    result1 = await session.call_tool(
-                        "web_search_exa",
-                        {
-                            "query": keywords,
-                            "num_results": 5,
-                            "start_published_date": "2024-01-01",
-                            "end_published_date": "2025-12-31"
-                        }
-                    )
+                    # Çoklu arama stratejisi - 8 farklı arama
+                    search_queries = [
+                        # 1. Ana arama
+                        {"query": keywords, "num_results": 8, "label": "ANA ARAMA"},
 
-                    if result1.content and len(result1.content) > 0:
-                        all_results.append(result1.content[0].text)
-                        print(f"✅ 1. ARAMA: {len(result1.content[0].text)} karakter")
+                        # 2. Güncel Türkiye haberleri
+                        {"query": "Türkiye haberleri gündem", "num_results": 6, "label": "GÜNCEL HABERLER"},
 
-                    # Ek arama - farklı terimlerle
-                    if "temmuz 2025" in keywords.lower():
-                        print(f"🔍 2. EK ARAMA: 'Temmuz 2025 Türkiye'")
-                        result2 = await session.call_tool(
-                            "web_search_exa",
-                            {
-                                "query": "Temmuz 2025 Türkiye",
-                                "num_results": 5,
-                                "start_published_date": "2025-07-01",
-                                "end_published_date": "2025-07-31"
+                        # 3. Ekonomi odaklı
+                        {"query": f"{keywords} ekonomi", "num_results": 5, "label": "EKONOMİ ARAMASI"},
+
+                        # 4. Politik gelişmeler
+                        {"query": f"{keywords} siyaset politik", "num_results": 5, "label": "SİYASET ARAMASI"},
+
+                        # 5. Sosyal gelişmeler
+                        {"query": f"{keywords} toplum sosyal", "num_results": 4, "label": "SOSYAL ARAMASI"},
+
+                        # 6. Son dakika haberleri
+                        {"query": "son dakika Türkiye", "num_results": 6, "label": "SON DAKİKA"},
+
+                        # 7. Özel tarih araması (eğer tarih belirtilmişse)
+                        {"query": f"Türkiye 2023 2024 2025 haber", "num_results": 5, "label": "TARİH ARAMASI"},
+
+                        # 8. Genel gündem
+                        {"query": "Türkiye gündem analiz", "num_results": 4, "label": "GÜNDEM ANALİZİ"}
+                    ]
+
+                    print(f"🎯 TOPLAM {len(search_queries)} FARKLI ARAMA YAPILACAK")
+
+                    for i, search_config in enumerate(search_queries, 1):
+                        try:
+                            print(f"🔍 {i}. {search_config['label']}: '{search_config['query']}'")
+
+                            # Arama parametreleri
+                            search_params = {
+                                "query": search_config["query"],
+                                "num_results": search_config["num_results"]
                             }
-                        )
-                        if result2.content and len(result2.content) > 0:
-                            all_results.append(result2.content[0].text)
-                            print(f"✅ 2. ARAMA: {len(result2.content[0].text)} karakter")
 
-                    # 3. Genel Türkiye haberleri
-                    print(f"🔍 3. GENEL ARAMA: 'Türkiye haberleri'")
-                    result3 = await session.call_tool(
-                        "web_search_exa",
-                        {
-                            "query": "Türkiye haberleri",
-                            "num_results": 5
-                        }
-                    )
-                    if result3.content and len(result3.content) > 0:
-                        all_results.append(result3.content[0].text)
-                        print(f"✅ 3. ARAMA: {len(result3.content[0].text)} karakter")
+                            # Tarih filtresi ekle (sadece spesifik aramalar için)
+                            if "2023" in keywords.lower() or "2024" in keywords.lower():
+                                search_params["start_published_date"] = "2023-01-01"
+                                search_params["end_published_date"] = "2025-12-31"
+                            elif i <= 4:  # İlk 4 arama için tarih filtresi
+                                search_params["start_published_date"] = "2024-01-01"
+                                search_params["end_published_date"] = "2025-12-31"
 
-                    # Tüm sonuçları birleştir
-                    search_result = "\n\n--- SONUÇ AYIRICI ---\n\n".join(all_results)
+                            result = await session.call_tool("web_search_exa", search_params)
+
+                            if result.content and len(result.content) > 0:
+                                all_results.append(result.content[0].text)
+                                print(f"✅ {i}. ARAMA: {len(result.content[0].text)} karakter")
+                            else:
+                                print(f"⚠️ {i}. ARAMA: Sonuç bulunamadı")
+
+                            # API rate limiting için kısa bekleyiş
+                            await asyncio.sleep(0.2)
+
+                        except Exception as e:
+                            print(f"❌ {i}. ARAMA HATASI: {e}")
+                            continue
+
+                    # Sonuçları birleştir
+                    search_result = "\n\n--- ARAMA SONUCU AYIRICI ---\n\n".join(all_results)
 
                     if search_result:
                         print(f"📊 TOPLAM ARAMA SONUCU: {len(search_result)} karakter")
-                        print(f"📊 TOPLAM ARAMA SAYISI: {len(all_results)} farklı arama")
+                        print(f"📊 BAŞARILI ARAMA SAYISI: {len(all_results)}")
 
-                        # Hangi sitelere bakıldığını çıkar
-                        sites_found = []
-                        for domain in ["trthaber.com", "hurriyet.com.tr", "milliyet.com.tr", "sabah.com.tr",
-                                       "cnnturk.com", "ntv.com.tr", "haberturk.com", "sozcu.com.tr", "ensonhaber.com",
-                                       "cumhuriyet.com.tr"]:
-                            if domain in search_result.lower():
-                                sites_found.append(domain)
+                        # Kapsamlı site analizi
+                        turkish_domains = [
+                            "trthaber.com", "hurriyet.com.tr", "milliyet.com.tr",
+                            "sabah.com.tr", "cnnturk.com", "ntv.com.tr",
+                            "haberturk.com", "sozcu.com.tr", "ensonhaber.com",
+                            "cumhuriyet.com.tr", "yenisakaryahaber.com.tr", "gazetevatan.com",
+                            "aksam.com.tr", "star.com.tr", "yenisafak.com",
+                            "takvim.com.tr", "posta.com.tr", "turkiyegazetesi.com.tr",
+                            "dunya.com", "aa.com.tr", "bbc.com/turkce"
+                        ]
 
-                        print(
-                            f"🌐 BULUNAN SİTELER ({len(sites_found)}): {', '.join(sites_found) if sites_found else 'Tespit edilemedi'}")
-                        print(f"📊 HAM VERİ ÖRNEĞİ (İLK 1000 KARAKTER):")
-                        print(f"{search_result[:1000]}...")
-                        print("-" * 60)
+                        sites_found = [domain for domain in turkish_domains
+                                       if domain in search_result.lower()]
 
-                        # GÜNDEM ÖZETLEME AGENT ile önce özetle
-                        gundem_ozeti = self.gundem_ozetleme_agent(search_result)
+                        # Site çeşitliliği analizi
+                        print(f"🌐 TARANAN SİTE SAYISI: {len(sites_found)}")
+                        if sites_found:
+                            print(f"🔗 BULUNAN SİTELER: {', '.join(sites_found)}")
+                        else:
+                            print("🔗 BULUNAN SİTELER: Site analizi yapılamadı")
 
-                        # Sequential Thinking ile Tuğrul Bey analizi (TEK SEFERLIK)
-                        tugrul_analysis_prompt = f"""Bu gündem özetini Tuğrul Bey olarak analiz et:
-
-BUGÜN: {current_date}
-GÜNDEM ÖZETİ: {gundem_ozeti}
-
-Kısa analiz yap (maksimum 100 kelime):
-1. En önemli haber hangisi?
-2. Seni en çok ne etkiledi?
-3. Ne düşünüyorsun?"""
-
-                        # Simple thinking ile Tuğrul Bey analizi (sadece 1 kez)
-                        tugrul_analysis = self.simple_think(tugrul_analysis_prompt, "TUGRUL_ANALIZI")
-                        print(f"✅ TUĞRUL BEY ANALİZİ TAMAMLANDI")
-                        print(f"📋 ANALİZ İÇERİĞİ:\n{tugrul_analysis}")
+                        # İçerik analizi için sample göster
+                        print(f"📄 İÇERİK ÖRNEĞİ (İLK 2000 KARAKTER):")
+                        print(f"{search_result[:2000]}...")
                         print("=" * 80)
 
+                        # Kapsamlı haber özetleme
+                        print("📰 KAPSAMLI HABER ÖZETLEMESİ BAŞLANIYOR...")
+                        news_summary = self.summarize_comprehensive_news(search_result, len(all_results),
+                                                                         len(sites_found))
+
+                        # Detaylı persona analizi
+                        analysis_prompt = f"""Bu kapsamlı araştırma sonuçlarını {self.persona['name']} olarak analiz et:
+
+BUGÜN: {current_date}
+TOPLAM ARAMA: {len(all_results)} farklı arama
+BULUNAN SİTE: {len(sites_found)} farklı haber sitesi
+
+KAPSAMLI HABER ÖZETİ:
+{news_summary[:2000]}
+
+Detaylı analiz yap (150 kelimeye kadar):
+1. En dikkat çeken gelişme nedir?
+2. Kişisel olarak seni en çok etkileyen konu?
+3. Bu gelişmelerin ülkeye etkisi nedir?
+4. Genel değerlendirmen ve yorumun?"""
+
+                        analysis = self.sequential_think(analysis_prompt, "DETAYLI_ANALIZ")
+
                         return {
-                            "raw_results": search_result[:10000],
-                            "gundem_ozeti": gundem_ozeti,
-                            "tugrul_analysis": tugrul_analysis,
+                            "raw_results": search_result[:15000],  # Daha fazla veri
+                            "news_summary": news_summary,
+                            "analysis": analysis,
                             "current_date": current_date,
                             "sites_count": len(sites_found),
                             "search_count": len(all_results)
                         }
                     else:
-                        print("❌ TÜM ARAMALAR BOŞ SONUÇ VERDİ")
-                        return {"raw_results": "", "gundem_ozeti": "", "tugrul_analysis": "",
-                                "current_date": current_date, "sites_count": 0, "search_count": 0}
+                        print("❌ TÜM ARAMALAR BAŞARISIZ")
+                        return {
+                            "raw_results": "",
+                            "news_summary": "",
+                            "analysis": "",
+                            "current_date": current_date,
+                            "sites_count": 0,
+                            "search_count": 0
+                        }
 
         except Exception as e:
             print(f"❌ Web arama hatası: {e}")
-            return {"raw_results": "", "gundem_ozeti": "", "tugrul_analysis": "", "current_date": current_date,
-                    "sites_count": 0, "search_count": 0}
+            return {
+                "raw_results": "",
+                "news_summary": "",
+                "analysis": "",
+                "current_date": current_date,
+                "sites_count": 0,
+                "search_count": 0
+            }
 
     async def chat(self, user_input: str):
-        """Ana sohbet fonksiyonu - Sequential Thinking mimarisi"""
-        print(f"\n" + "=" * 60)
+        """Ana sohbet fonksiyonu"""
+        print(f"\n{'=' * 60}")
         print(f"📝 KULLANICI: {user_input}")
         print("=" * 60)
 
-        # ADIM 1: Soruyu Sequential Thinking ile analiz et
-        question_analysis = self.simple_think(
-            f"Kullanıcı şunu soruyor: '{user_input}'. Bu soruya nasıl yaklaşmalısın? Bu soru hakkında ne düşünüyorsun?",
+        # Sequential Thinking pipeline
+        question_analysis = self.sequential_think(
+            f"Kullanıcı '{user_input}' diyor. Bu soruya nasıl yaklaşmalısın?",
             "SORU_ANALIZI"
         )
 
-        # ADIM 2: Arama gerekli mi Sequential Thinking ile karar ver
-        search_decision = self.simple_think(
-            f"'{user_input}' sorusunu cevaplayabilmek için web araması yapmam gerekiyor mu? Bu güncel bir konu mu?",
+        search_decision = self.sequential_think(
+            f"'{user_input}' için web araması gerekli mi? Bu güncel bir konu mu?",
             "ARAMA_KARARI"
         )
 
-        # Arama tetikleyicilerini kontrol et
+        # Arama tetikleyicileri
         search_triggers = [
-            "son", "güncel", "yeni", "bugün", "haber", "gündem", "olay", "durum",
-            "ne oluyor", "neler oldu", "pkk", "terör", "ekonomi", "dolar",
-            "politika", "seçim", "ağustos", "temmuz", "2025", "2024",
-            "15 temmuz", "lgbt", "mülteci", "erdoğan", "chp", "mhp"
+            "son", "güncel", "yeni", "bugün", "haber", "gündem", "olay",
+            "ne oluyor", "neler oldu", "ekonomi", "politika", "seçim",
+            "2024", "2025"
         ]
 
         user_lower = user_input.lower()
-        needs_search = any(
-            trigger in user_lower for trigger in search_triggers) or "arama gerek" in search_decision.lower()
+        needs_search = any(trigger in user_lower for trigger in search_triggers) or \
+                       "arama gerek" in search_decision.lower()
 
-        tugrul_knowledge = ""
+        current_date = self.get_current_date()
+        analysis = ""
+        news_summary = ""
+
         if needs_search:
-            print("🎯 GÜNCEL BİLGİ GEREKLİ: Sequential Thinking ile detaylı arama yapılacak")
+            print("🎯 GÜNCEL BİLGİ ARANACAK")
 
-            # ADIM 3: Arama terimlerini Sequential Thinking ile belirle
-            search_terms = self.simple_think(
-                f"'{user_input}' sorusu için hangi anahtar kelimelerle arama yapmalıyım? En etkili arama terimlerini belirle.",
+            search_terms = self.sequential_think(
+                f"'{user_input}' için en iyi arama terimleri neler?",
                 "ARAMA_TERIMLERI"
             )
 
-            # ADIM 4: Detaylı arama yap
             search_data = await self.search_web_detailed(search_terms.strip())
-            tugrul_knowledge = search_data["tugrul_analysis"]
-            gundem_ozeti = search_data["gundem_ozeti"]
-            current_date = search_data["current_date"]
-            sites_count = search_data.get("sites_count", 0)
-            search_count = search_data.get("search_count", 0)
+            analysis = search_data["analysis"]
+            news_summary = search_data["news_summary"]
 
-            print(f"📊 ARAMA ÖZET: {search_count} farklı arama, {sites_count} site bulundu")
-
+            print(f"📊 ARAMA ÖZETİ: {search_data['search_count']} arama, {search_data['sites_count']} site")
         else:
-            print("⚡ GENEL SOHBET: Sequential Thinking ile temel analiz")
-            tugrul_knowledge = ""
-            gundem_ozeti = ""
-            current_date = self.get_current_date()
+            print("⚡ GENEL SOHBET")
 
-        # ADIM 5: Cevap planlamasını Sequential Thinking ile yap
-        response_plan = self.simple_think(
-            f"""Şimdi bu soruya nasıl cevap vereceğim:
-Bugünün tarihi: {current_date}
-Soru: '{user_input}'
-Güncel bilgi var mı: {'Evet' if tugrul_knowledge else 'Hayır'}
-Hangi tarzda cevap vermeliyim?""",
+        # Cevap planlama
+        response_plan = self.sequential_think(
+            f"Soru: '{user_input}' | Güncel bilgi: {'Var' if analysis else 'Yok'} | Nasıl cevap vereyim?",
             "CEVAP_PLANLAMA"
         )
 
-        # ADIM 6: Final cevap - Tuğrul Bey karakterinde
-        print(f"\n💬 FINAL CEVAP HAZIRLANIYOR...")
+        # Final cevap
+        print("💬 CEVAP HAZIRLANIYOR...")
 
-        # Geçmiş konuşmaları ekle
+        # Geçmiş ekle
         history_text = ""
         if self.conversation_history:
-            recent = self.conversation_history[-1:]  # Son 1 konuşma
+            recent = self.conversation_history[-1:]
             for h in recent:
-                history_text += f"Önceki: Kullanıcı: {h['user'][:100]}... / Sen: {h['assistant'][:100]}...\n"
+                history_text += f"Önceki: Sen: {h['user'][:100]}... | Ben: {h['assistant'][:100]}...\n"
 
-        # Final prompt - Sequential thinking + Gündem Özeti ile
         final_prompt = f"""{self.create_system_prompt()}
 
 BUGÜNÜN TARİHİ: {current_date}
 
-SEQUENTIAL THINKING SONUÇLARI:
+DÜŞÜNME SÜRECİ:
 Soru Analizi: {question_analysis[:300]}
 Cevap Planı: {response_plan[:300]}
 
-{"GÜNDEM ÖZETİ:" if gundem_ozeti else ""}
-{gundem_ozeti[:1500] if gundem_ozeti else ""}
+{"GÜNCEL HABERLER:" if news_summary else ""}
+{news_summary[:1500] if news_summary else ""}
 
-{"TUĞRUL BEY ANALİZİ:" if tugrul_knowledge else ""}
-{tugrul_knowledge[:1500] if tugrul_knowledge else ""}
+{"KİŞİSEL ANALİZ:" if analysis else ""}
+{analysis[:1500] if analysis else ""}
 
 {history_text}
 
 Kullanıcı: "{user_input}"
 
-Tuğrul Bey olarak, yukarıdaki bilgilere göre detaylı cevap ver:"""
+Karakterine uygun, detaylı cevap ver:"""
 
         try:
-            print("🤖 GEMİNİ'YE GÖNDERİLİYOR...")
+            print("🤖 CEVAP ÜRETİLİYOR...")
             response_text = self.try_with_api_rotation(final_prompt)
-            print(f"✅ CEVAP: {len(response_text)} karakter")
+            print(f"✅ CEVAP HAZIR: {len(response_text)} karakter")
 
             # Geçmişe ekle
             self.conversation_history.append({
@@ -500,69 +558,75 @@ Tuğrul Bey olarak, yukarıdaki bilgilere göre detaylı cevap ver:"""
                 'assistant': response_text
             })
 
-            # Sadece son 3 konuşma tut
+            # Son 3 konuşma tut
             if len(self.conversation_history) > 3:
                 self.conversation_history = self.conversation_history[-3:]
 
             return response_text
 
         except Exception as e:
-            print(f"❌ GEMİNİ HATASI: {e}")
-            return f"Valla kardeşim bir sorun oldu, kusura bakma. Biraz sonra tekrar dene."
+            print(f"❌ CEVAP ÜRETME HATASI: {e}")
+            return "Özür dilerim, şu anda teknik bir sorun yaşıyorum. Lütfen biraz sonra tekrar deneyin."
+
+
+def get_available_personas():
+    """Mevcut persona'ları listele"""
+    try:
+        personas = []
+        for file in os.listdir('personas'):
+            if file.endswith('.json'):
+                personas.append(file[:-5])  # .json uzantısını çıkar
+        return personas
+    except:
+        return ['tugrul_bey']
 
 
 async def main():
-    print("🇹🇷 Tuğrul Bey ile konuşmaya başladınız!")
-    print("🧠 Sequential Thinking mimarisi aktif (Gemini ile)")
-    print("📰 GÜNDEM ÖZETLEME AGENT sistemi aktif")
-    print("🔧 Gelişmiş web arama entegrasyonu aktif")
-    print("📅 Tarih kontrolü ve site analizi aktif")
-    print("💡 'switch' yazarak manuel API değiştir")
-    print("Çıkmak için 'quit' yazın\n")
+    """Ana program"""
+    print("🎭 Mini Microcosmos - AI Persona Simulator")
+    print("🧠 Sequential Thinking mimarisi aktif")
+    print("🔧 Güvenli ve yapılandırılmış sistem\n")
 
-    agent = TugrulBeyAgent()
+    # Mevcut persona'ları göster
+    available_personas = get_available_personas()
+    print(f"📋 Mevcut Persona'lar: {', '.join(available_personas)}")
 
-    print(f"📊 API Key sayısı: {len(agent.api_keys)}")
-    print(f"🚀 Şu anda API #{agent.current_api_index + 1} kullanılıyor")
+    # Persona seçimi (varsayılan: tugrul_bey)
+    selected_persona = "tugrul_bey"
+    print(f"🎯 Aktif Persona: {selected_persona}")
+
+    try:
+        agent = PersonaAgent(selected_persona)
+        print(f"📊 API Key sayısı: {len(agent.api_keys)}")
+        print("💡 Komutlar: 'switch' (API değiştir), 'quit' (çıkış)\n")
+    except Exception as e:
+        print(f"❌ Agent başlatma hatası: {e}")
+        return
 
     while True:
         try:
-            # Güvenli input alma - encoding sorunu çözümü
-            try:
-                user_input = input("\n👤 Siz: ").strip()
-            except UnicodeDecodeError:
-                # Fallback - bytes olarak al ve decode et
-                import sys
-                user_input_bytes = sys.stdin.buffer.readline()
-                user_input = user_input_bytes.decode('utf-8', errors='ignore').strip()
-                print(f"🔧 Encoding düzeltildi: {user_input}")
+            user_input = input(f"\n👤 Siz: ").strip()
 
-            # Manuel API değiştirme komutu
             if user_input.lower() == 'switch':
                 agent.switch_api_key()
-                print(f"🔄 Şu anda API #{agent.current_api_index + 1} kullanılıyor")
                 continue
 
-            if user_input.lower() in ['quit', 'exit']:
-                print("👋 Güle güle kardeşim!")
+            if user_input.lower() in ['quit', 'exit', 'q']:
+                print("👋 Görüşmek üzere!")
                 break
 
             if not user_input:
                 continue
 
             response = await agent.chat(user_input)
-            print(f"\n🎭 Tuğrul Bey: {response}")
+            print(f"\n🎭 {agent.persona['name']}: {response}")
             print("\n" + "-" * 60)
 
         except KeyboardInterrupt:
-            print("\n👋 Güle güle kardeşim!")
+            print("\n👋 Görüşmek üzere!")
             break
-        except UnicodeDecodeError as e:
-            print(f"❌ Karakter encoding hatası: {e}")
-            print("💡 Türkçe karakter sorunu, basit karakterler kullanmayı deneyin")
-            continue
         except Exception as e:
-            print(f"❌ Bir hata oluştu: {e}")
+            print(f"❌ Hata: {e}")
             continue
 
 
