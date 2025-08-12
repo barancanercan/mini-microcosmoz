@@ -1,10 +1,9 @@
-
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .stApp {
-    background-color: #f8f9fa;
+    background-color: #f0f2f5;
 }
 
 .main-container {
@@ -12,36 +11,42 @@ body {
 }
 
 .chat-column {
-    border: 1px solid #e9ecef;
     border-radius: 12px;
     background-color: #ffffff;
     padding: 0;
     height: 85vh;
     display: flex;
     flex-direction: column;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
 }
 
 .chat-header {
-    font-size: 1.2rem;
-    font-weight: 600;
+    font-size: 20px;
+    font-weight: bold;
     text-align: center;
-    padding: 1rem;
-    border-bottom: 1px solid #e9ecef;
+    padding: 15px;
+    background-color: #075e54;
+    color: white;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    margin: 0;
 }
 
-.stExpander {
-    border: none !important;
-    box-shadow: none !important;
+.thinking-section {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 0;
 }
 
-.stExpander > div[data-testid="stExpanderDetails"] {
+.thinking-box {
     background-color: #f8f9fa;
     padding: 10px;
     font-size: 0.85rem;
     color: #495057;
     max-height: 200px;
     overflow-y: auto;
-    border-bottom: 1px solid #e9ecef;
+    border: none;
 }
 
 .chat-container {
@@ -50,25 +55,54 @@ body {
     padding: 15px;
     display: flex;
     flex-direction: column;
+    min-height: 400px;
+    max-height: 500px;
 }
 
 .message-bubble {
     padding: 10px 16px;
-    border-radius: 20px;
+    border-radius: 18px;
     margin-bottom: 10px;
     max-width: 85%;
     word-wrap: break-word;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     line-height: 1.4;
 }
 
 .user-bubble {
-    background-color: #007bff;
-    color: white;
+    background-color: #dcf8c6;
     align-self: flex-end;
+    color: #000;
 }
 
 .assistant-bubble {
-    background-color: #e9ecef;
-    color: #212529;
+    background-color: #ffffff;
     align-self: flex-start;
+    border: 1px solid #f0f0f0;
+    color: #000;
+}
+
+/* Streamlit expander özelleştirmeleri */
+.stExpander {
+    border: none !important;
+    box-shadow: none !important;
+    background-color: #f8f9fa !important;
+}
+
+.stExpander > div[data-testid="stExpanderDetails"] {
+    background-color: #f8f9fa !important;
+    padding: 10px !important;
+    border: none !important;
+}
+
+/* Chat input stil */
+.stChatInput {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border-top: 1px solid #e0e0e0;
+    padding: 10px;
+    z-index: 1000;
 }

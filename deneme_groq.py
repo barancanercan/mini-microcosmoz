@@ -3,50 +3,25 @@ import json
 import os
 import asyncio
 import html
+import aiohttp
 from datetime import datetime
 from dotenv import load_dotenv
 from groq import AsyncGroq
 
-# --- Genel Yapılandırma ---
-st.set_page_config(page_title="Microcosmos Simülatörü (Groq)", layout="wide")
-load_dotenv()
 
-# --- Sohbet Geçmişi ve Logları Başlatma ---
-if "chat_history_eski" not in st.session_state:
-    st.session_state.chat_history_eski = []
-if "chat_history_yeni" not in st.session_state:
-    st.session_state.chat_history_yeni = []
-if "eski_logs" not in st.session_state:
-    st.session_state.eski_logs = []
-if "yeni_logs" not in st.session_state:
-    st.session_state.yeni_logs = []
-if "processing_prompt" not in st.session_state:
-    st.session_state.processing_prompt = None
-
-# --- Stil Dosyası Yükleme ---
-def load_css(file_name):
-    try:
-        with open(file_name, "r") as f:
-            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-    except FileNotFoundError:
-        st.error(f"Stil dosyası bulunamadı: {file_name}")
-
-load_css("style.css")
-
-
-# --- PersonaAgent Sınıfı (Değişiklik yok) ---
+# --- PersonaAgent Sınıfı (Düzeltilmiş Versiyon) ---
 class PersonaAgent:
     def __init__(self, persona_name="tugrul_bey", ui_log_callback=None):
         self.persona_name = persona_name
         self.log_callback = ui_log_callback
         self.log(f"Agent for {persona_name} başlatılıyor.", "info")
-        
+
         self.groq_api_key = os.getenv("GROQ_API_KEY")
 
         if not self.groq_api_key:
             self.log("Hiçbir GROQ API key bulunamadı! .env dosyasını kontrol edin.", "error")
             st.stop()
-        
+
         self._initialize_model()
         self.persona = self._load_persona(persona_name)
         self.conversation_history = []
@@ -79,7 +54,7 @@ class PersonaAgent:
                 chat_completion = await self.client.chat.completions.create(
                     messages=messages,
                     model=self.model_name,
-                    temperature=0.7, 
+                    temperature=0.7,
                     max_tokens=1024,
                 )
                 self.log("Groq API çağrısı başarılı.", "debug")
@@ -95,6 +70,64 @@ class PersonaAgent:
                     raise e
         self.log("Tüm Groq API denemeleri başarısız oldu.", "error")
         raise Exception("Groq API'ye ulaşılamıyor veya tüm denemeler başarısız oldu.")
+
+    # ========== WEB ARAMA FONKSİYONU (BASİTLEŞTİRİLMİŞ) ==========
+    async def web_search_mcp(self, query: str) -> str:
+        """Basit web araması yapar - DuckDuckGo API kullanır"""
+        try:
+            self.log(f"🔍 Web araması başlatılıyor: '{query}'", "info")
+
+            # DuckDuckGo Instant Answer API
+            url = "https://api.duckduckgo.com/"
+            params = {
+                "q": query,
+                "format": "json",
+                "no_html": "1",
+                "skip_disambig": "1"
+            }
+
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url, params=params) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        result = self._format_duckduckgo_results(data, query)
+                        if result:
+                            self.log("✅ Web araması başarılı", "success")
+                            return result
+
+            # Eğer sonuç yoksa basit mesaj döndür
+            self.log("Web araması sonuç döndürmedi", "warning")
+            return f"'{query}' konusunda web araması yapıldı ancak detaylı sonuç alınamadı."
+
+        except Exception as e:
+            self.log(f"❌ Web araması hatası: {e}", "error")
+            return f"'{query}' konusunda arama yapılmaya çalışıldı ancak teknik sorun oluştu."
+
+    def _format_duckduckgo_results(self, data, query) -> str:
+        """DuckDuckGo sonuçlarını formatlar"""
+        result = f"🔍 '{query}' ARAMA SONUÇLARI:\n\n"
+
+        # Abstract (özet bilgi)
+        if data.get("Abstract"):
+            result += f"📄 **Özet Bilgi:**\n{data['Abstract']}\n\n"
+
+        # Definition (tanım)
+        if data.get("Definition"):
+            result += f"📚 **Tanım:**\n{data['Definition']}\n\n"
+
+        # Related topics
+        if data.get("RelatedTopics"):
+            result += "🔗 **İlgili Konular:**\n"
+            for topic in data["RelatedTopics"][:3]:
+                if isinstance(topic, dict) and topic.get("Text"):
+                    result += f"- {topic['Text'][:100]}...\n"
+            result += "\n"
+
+        # Eğer hiçbir sonuç yoksa
+        if len(result.strip()) <= len(f"🔍 '{query}' ARAMA SONUÇLARI:"):
+            return None
+
+        return result[:800]  # Sınırla
 
     def create_system_prompt(self):
         bio_text = "\n- ".join(self.persona.get("bio", ["Bilinmiyor"]))
@@ -118,14 +151,15 @@ BİLGİN:
 
 ÖNEMLİ KURALLAR:
 - Karakterine uygun davran
-- Güncel olayları web aramalarından öğreniyorsun
+- Web arama sonuçlarını kullanarak güncel bilgi ver
 - Kendi görüşlerini belirt ama saygılı ol
-- Detaylı bilgi ver ama çok uzun olma"""
+- Detaylı bilgi ver ama çok uzun olma
+- Web araması yapıldığında sonuçları değerlendir ve yorumla"""
 
     async def sequential_think(self, prompt: str, stage_name: str):
         self.log(f"🧠 {stage_name.upper()} DÜŞÜNÜLÜYOR...", "info")
         thinking_prompt = f"'{prompt}' konusunu 2-3 cümleyle düşün: 1. Durum ne? 2. Ne yapmalıyım? 3. Kararım ne?"
-        
+
         messages = [
             {"role": "system", "content": self.create_system_prompt()},
             {"role": "user", "content": thinking_prompt}
@@ -139,125 +173,78 @@ BİLGİN:
             self.log(f"❌ {stage_name} düşünme hatası: {e}", "error")
             return "Normal bir yaklaşımla cevap vereceğim."
 
+    # ========== ANA CHAT FONKSİYONU (DÜZELTİLMİŞ) ==========
     async def chat(self, user_input: str):
         self.log(f"💬 Yeni mesaj alındı: '{user_input}'", "info")
         self.conversation_history.append({"role": "user", "content": user_input})
 
         self.log("--- Düşünce Süreci Başlıyor ---", "info")
-        question_analysis = await self.sequential_think(f"Kullanıcı '{user_input}' diyor.", "SORU_ANALIZI")
-        search_decision = await self.sequential_think(f"'{user_input}' için web araması yapmalı mıyım?", "ARAMA_KARARI")
+
+        # 1. Soru analizi
+        question_analysis = await self.sequential_think(
+            f"Kullanıcı '{user_input}' diyor.",
+            "SORU_ANALIZI"
+        )
+
+        # 2. Arama kararı
+        search_decision = await self.sequential_think(
+            f"'{user_input}' için web araması yapmalı mıyım? Güncel bilgi gerekli mi?",
+            "ARAMA_KARARI"
+        )
+
+        # 3. Web arama (gerekirse)
         web_summary = ""
-        response_plan = await self.sequential_think(f"Soru: '{user_input}'. Web sonucu: '{'Var' if web_summary else 'Yok'}'. Nasıl cevap vermeliyim?", "CEVAP_PLANLAMA")
+        if "evet" in search_decision.lower() or "gerekli" in search_decision.lower():
+            self.log("🔍 WEB ARAMASI YAPILIYOR...", "info")
+            # Arama terimlerini belirle
+            search_terms = await self.sequential_think(
+                f"'{user_input}' sorusu için hangi kelimeleri aratmalıyım? Sadece anahtar kelimeleri söyle.",
+                "ARAMA_TERİMLERİ"
+            )
+
+            # Web araması yap
+            web_summary = await self.web_search_mcp(search_terms)
+            self.log(f"📄 WEB SONUÇLARI ALINDI: {len(web_summary)} karakter", "success")
+        else:
+            self.log("📵 Web araması gerekli görülmedi", "info")
+
+        # 4. Cevap planlaması
+        response_plan = await self.sequential_think(
+            f"Soru: '{user_input}'. Web sonucu: '{web_summary[:200] if web_summary else 'Yok'}'. Nasıl cevap vermeliyim?",
+            "CEVAP_PLANLAMA"
+        )
+
         self.log("--- Düşünce Süreci Bitti ---", "info")
 
+        # Final cevap oluşturma
         messages_for_groq = [
             {"role": "system", "content": self.create_system_prompt()}
         ]
+
+        # Geçmiş konuşmaları ekle (son 5 mesaj)
         for msg in self.conversation_history[-5:]:
             messages_for_groq.append({"role": msg["role"], "content": msg["content"]})
-        
-        messages_for_groq.append({"role": "user", "content": 
-            f"DÜŞÜNCE SÜRECİ:\n- Analiz: {question_analysis}\n- Arama Kararı: {search_decision}\n- Web Özeti: {web_summary}\n- Cevap Planı: {response_plan}\n\nKullanıcı: {user_input}\n\nKarakterine uygun cevabı şimdi ver:"
-        })
+
+        # Ana prompt'u oluştur
+        web_info = f"WEB ARAMA SONUÇLARI:\n{web_summary}\n" if web_summary else ""
+
+        final_prompt = f"""DÜŞÜNCE SÜRECİ:
+- Analiz: {question_analysis}
+- Arama Kararı: {search_decision}
+- Cevap Planı: {response_plan}
+
+{web_info}
+
+Kullanıcı: {user_input}
+
+Yukarıdaki bilgileri kullanarak karakterine uygun, detaylı ve yararlı bir cevap ver. 
+Web arama sonuçları varsa bunları mutlaka yorumla ve değerlendir."""
+
+        messages_for_groq.append({"role": "user", "content": final_prompt})
 
         self.log("🤖 Final cevap üretiliyor...", "info")
         final_response = await self.call_groq_api(messages_for_groq)
         self.log("✅ Cevap hazır.", "success")
+
         self.conversation_history.append({"role": "assistant", "content": final_response})
         return final_response
-
-# --- Streamlit Arayüzü ---
-
-st.title("Persona Simülatörü")
-
-@st.cache_resource
-def get_agent(persona_name, log_container_key):
-    if log_container_key not in st.session_state:
-        st.session_state[log_container_key] = []
-
-    def ui_logger(message, type="info"):
-        color = {
-            "info": "#495057", "success": "#28a745", "warning": "#ffc107",
-            "error": "#dc3545", "debug": "#6c757d"
-        }.get(type, "black")
-        # HTML tag'lerinden kaçınarak logları daha temiz tut
-        safe_message = html.escape(message)
-        st.session_state[log_container_key].append(f'<span style="color: {color};">{safe_message}</span>')
-
-    return PersonaAgent(persona_name=persona_name, ui_log_callback=ui_logger)
-
-# --- Ajanları ve Durumları Yönetme ---
-eski_agent = get_agent("tugrul_bey", "eski_logs")
-yeni_agent = get_agent("yeni_tugrul", "yeni_logs")
-
-def generate_chat_html(chat_history):
-    chat_html = ""
-    for message in chat_history:
-        role = message["role"]
-        bubble_class = "user-bubble" if role == "user" else "assistant-bubble"
-        escaped_content = html.escape(message["content"]).replace('\n', '<br>')
-        chat_html += f'<div class="message-bubble {bubble_class}">{escaped_content}</div>'
-    return chat_html
-
-def display_chat_column(title, agent, logs_key):
-    with st.container():
-        st.markdown(f'<div class="chat-header">{title}</div>', unsafe_allow_html=True)
-        
-        with st.expander("Düşünce Sürecini Göster"):
-            logs_html = "<br>".join(st.session_state.get(logs_key, []))
-            st.markdown(f'<div class="thinking-box">{logs_html}</div>', unsafe_allow_html=True)
-
-        chat_container = st.container()
-        with chat_container:
-            chat_html = generate_chat_html(agent.conversation_history)
-            st.markdown(f'<div class="chat-container">{chat_html}</div>', unsafe_allow_html=True)
-
-# --- Arayüz Sütunları ---
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown('<div class="chat-column">', unsafe_allow_html=True)
-    display_chat_column("Eski Tuğrul", eski_agent, "eski_logs")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-with col2:
-    st.markdown('<div class="chat-column">', unsafe_allow_html=True)
-    display_chat_column("Yeni Tuğrul", yeni_agent, "yeni_logs")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-
-# --- Ana Sohbet Döngüsü ---
-async def run_chat_for_persona(agent, prompt, log_container_key):
-    st.session_state[log_container_key].clear()
-    response = await agent.chat(prompt)
-    return response
-
-async def process_agents_and_get_responses(prompt_to_process):
-    st.session_state.eski_logs.clear()
-    st.session_state.yeni_logs.clear()
-
-    task1 = asyncio.create_task(run_chat_for_persona(eski_agent, prompt_to_process, "eski_logs"))
-    task2 = asyncio.create_task(run_chat_for_persona(yeni_agent, prompt_to_process, "yeni_logs"))
-
-    await asyncio.gather(task1, task2)
-
-    st.session_state.processing_prompt = None 
-    st.rerun()
-
-# --- Chat Input ve İşleme Tetikleyici ---
-if prompt := st.chat_input("Tuğrullara sor..."):
-    eski_agent.conversation_history.append({"role": "user", "content": prompt})
-    yeni_agent.conversation_history.append({"role": "user", "content": prompt})
-    st.session_state.processing_prompt = prompt
-    st.rerun()
-
-# --- İşleme Devam Etme Bloğu ---
-if st.session_state.processing_prompt:
-    with st.spinner("Agent'lar düşünüyor..."):
-        try:
-            # Streamlit'in event loop'u ile uyumlu çalışması için
-            asyncio.run(process_agents_and_get_responses(st.session_state.processing_prompt))
-        except Exception as e:
-            st.error(f"Agent işleme sırasında bir hata oluştu: {e}")
-            st.session_state.processing_prompt = None 
-            st.rerun()
