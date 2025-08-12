@@ -96,7 +96,7 @@ class PersonaAgent:
         self.persona_name = persona_name
         # Logları doğrudan konsola yazdır
         self.log = lambda message, type: print(f"[{self.persona_name.upper()}][{type.upper()}] {message}")
-        
+
         self.api_keys = self._load_api_keys()
         self.current_api_index = 0
         self.smithery_api_key = os.getenv("SMITHERY_API_KEY")
@@ -105,7 +105,7 @@ class PersonaAgent:
         if not self.api_keys:
             self.log("Hiçbir GEMINI API key bulunamadı! .env dosyasını kontrol edin.", "error")
             st.stop()
-        
+
         if not self.smithery_api_key or not self.smithery_profile:
             self.log("SMITHERY API bilgileri .env'de bulunamadı. Web arama devre dışı bırakıldı.", "warning")
 
@@ -148,7 +148,7 @@ class PersonaAgent:
         self.log(f"try_with_api_rotation çağrıldı. Prompt başlangıcı: {prompt[:50]}...", "debug")
         if max_retries is None:
             max_retries = len(self.api_keys)
-        
+
         for attempt in range(max_retries):
             try:
                 self.log(f"API çağrısı denemesi {attempt + 1}/{max_retries}...", "debug")
@@ -165,7 +165,7 @@ class PersonaAgent:
                     if attempt < max_retries - 1:
                         self.switch_api_key()
                         continue
-                raise e # Hatanın yukarıya fırlatılmasını sağla
+                raise e  # Hatanın yukarıya fırlatılmasını sağla
         self.log("Tüm API denemeleri başarısız oldu.", "error")
         return "Sistem yoğunluğu nedeniyle geçici olarak hizmet veremiyorum."
 
@@ -204,24 +204,28 @@ class PersonaAgent:
 
         search_decision = await self.sequential_think(f"'{user_input}' için web araması yapmalı mıyım?", "ARAMA_KARARI")
         self.log(f"Arama Kararı: {search_decision}", "debug")
-        
+
         web_summary = ""
 
-        response_plan = await self.sequential_think(f"Soru: '{user_input}'. Web sonucu: '{'Var' if web_summary else 'Yok'}'. Nasıl cevap vermeliyim?", "CEVAP_PLANLAMA")
+        response_plan = await self.sequential_think(
+            f"Soru: '{user_input}'. Web sonucu: '{'Var' if web_summary else 'Yok'}'. Nasıl cevap vermeliyim?",
+            "CEVAP_PLANLAMA")
         self.log(f"Cevap Planı: {response_plan}", "debug")
 
         history_text = "\n".join([f"{msg['role']}: {msg['content']}" for msg in self.conversation_history[-3:]])
         final_prompt = f"{self.create_system_prompt()}\n\nGEÇMİŞ KONUŞMA:\n{history_text}\n\nDÜŞÜNCE SÜRECİ:\n- Analiz: {question_analysis}\n- Arama Kararı: {search_decision}\n- Web Özeti: {web_summary}\n- Cevap Planı: {response_plan}\n\nKullanıcı: \"{user_input}\"\n\nKarakterine uygun cevabı şimdi ver:"
-        
+
         self.log("🤖 Final cevap üretiliyor...", "info")
         final_response = await self.try_with_api_rotation(final_prompt)
         self.log("✅ Cevap hazır.", "success")
         self.conversation_history.append({"role": "assistant", "content": final_response})
         return final_response
 
+
 # --- Streamlit Arayüzü ---
 
 st.title("Persona Simülatörü: Düşünce Katmanlı Mimari")
+
 
 @st.cache_resource
 def get_agent(persona_name, log_container_key):
@@ -234,19 +238,21 @@ def get_agent(persona_name, log_container_key):
         print(f"[{persona_name.upper()}][{type.upper()}] {message}")
         # UI'da göstermek için session_state'e de ekle
         color = {
-            "info": "#495057",    # Koyu gri
-            "success": "#28a745", # Yeşil
-            "warning": "#ffc107", # Turuncu
-            "error": "#dc3545",   # Kırmızı
-            "debug": "#6c757d"    # Açık gri
+            "info": "#495057",  # Koyu gri
+            "success": "#28a745",  # Yeşil
+            "warning": "#ffc107",  # Turuncu
+            "error": "#dc3545",  # Kırmızı
+            "debug": "#6c757d"  # Açık gri
         }.get(type, "black")
         st.session_state[log_container_key].append(f"<span style=\"color: {color};\">{message}</span>")
 
     return PersonaAgent(persona_name=persona_name, ui_log_callback=ui_logger)
 
+
 # --- Ajanları ve Durumları Yönetme ---
 eski_agent = get_agent("tugrul_bey", "eski_logs")
 yeni_agent = get_agent("yeni_tugrul", "yeni_logs")
+
 
 def generate_chat_html(chat_history):
     chat_html = ""
@@ -256,6 +262,7 @@ def generate_chat_html(chat_history):
         escaped_content = html.escape(message["content"]).replace('\n', '<br>')
         chat_html += f'<div class="message-bubble {bubble_class}">{escaped_content}</div>'
     return chat_html
+
 
 # --- Arayüz Sütunları ---
 col1, col2 = st.columns(2)
@@ -282,12 +289,14 @@ with col2:
     st.markdown(generate_chat_html(yeni_agent.conversation_history), unsafe_allow_html=True)
     st.markdown('</div></div>', unsafe_allow_html=True)
 
+
 # --- Ana Sohbet Döngüsü ---
 async def run_chat_for_persona(agent, prompt, log_container_key):
     # Logları temizle
     st.session_state[log_container_key] = []
     response = await agent.chat(prompt)
     return response
+
 
 async def process_agents_and_get_responses(prompt_to_process):
     print(f"[MAIN] process_agents_and_get_responses başladı. Prompt: {prompt_to_process}")
@@ -304,9 +313,10 @@ async def process_agents_and_get_responses(prompt_to_process):
     print("[MAIN] Agent görevleri tamamlandı.")
 
     # After processing, clear the processing flag and rerun to update UI
-    st.session_state.processing_prompt = None # Clear the prompt being processed
+    st.session_state.processing_prompt = None  # Clear the prompt being processed
     print("[MAIN] İşlem tamamlandı. UI güncellemesi için rerun çağrılıyor.")
     st.rerun()
+
 
 # --- Chat Input ve İşleme Tetikleyici ---
 if prompt := st.chat_input("Tuğrullara sor..."):
@@ -318,7 +328,7 @@ if prompt := st.chat_input("Tuğrullara sor..."):
     # Set flag to trigger processing on next rerun
     st.session_state.processing_prompt = prompt
     print("[MAIN] Kullanıcı mesajları geçmişe eklendi. İşleme bayrağı ayarlandı. İlk rerun çağrılıyor.")
-    st.rerun() # Trigger rerun to show user message and start processing
+    st.rerun()  # Trigger rerun to show user message and start processing
 
 # --- İşleme Devam Etme Bloğu ---
 # Bu blok, st.rerun() sonrası betik yeniden başladığında çalışır.
@@ -330,5 +340,5 @@ if st.session_state.processing_prompt:
         except Exception as e:
             print(f"[MAIN][ERROR] Agent işleme sırasında hata oluştu: {e}")
             st.error(f"Agent işleme sırasında bir hata oluştu: {e}")
-            st.session_state.processing_prompt = None # Hata durumunda bayrağı temizle
-            st.rerun() # Hata mesajını göstermek ve spinner'ı kaldırmak için yeniden çalıştır
+            st.session_state.processing_prompt = None  # Hata durumunda bayrağı temizle
+            st.rerun()  # Hata mesajını göstermek ve spinner'ı kaldırmak için yeniden çalıştır
