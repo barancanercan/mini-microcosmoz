@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Mini Microcosmos - Streamlit UI (Sadeleştirilmiş Black Theme)
-Sadece Gemini API kullanan, temiz arayüz
+Mini Microcosmos - Streamlit UI (Final Düzeltilmiş)
+Başlık problemi ve beyaz alan tamamen çözüldü
 """
 
 import json
@@ -25,170 +25,283 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 # Environment değişkenlerini yükle
 load_dotenv(dotenv_path='config/.env')
 
-# Streamlit page config
+# Streamlit page config - Beyaz boşluk için optimize edilmiş
 st.set_page_config(
-    page_title="Mini Microcosmos",
+    page_title="Mini-Microcosmos",
     page_icon="🎭",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="collapsed"
 )
 
-# Black Theme CSS
+# CSS'i en üste yerleştir - Tüm sorunlar çözüldü
 st.markdown("""
 <style>
-    /* Ana tema */
+    /* GLOBAL RESET - Her şeyi sıfırla */
+    html, body, div, span, h1, h2, h3, p {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* STREAMLIT APP CONTAINER - Ana konteyner */
     .stApp {
-        background-color: #0e1117;
-        color: #fafafa;
+        background-color: #0e1117 !important;
+        color: #fafafa !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        top: 0 !important;
     }
 
-    /* Sidebar */
-    .css-1d391kg {
-        background-color: #262730;
+    /* STREAMLIT HEADER - Tamamen gizle */
+    header[data-testid="stHeader"] {
+        height: 0px !important;
+        display: none !important;
+        visibility: hidden !important;
     }
 
-    /* Kart stilleri */
-    .persona-card {
+    /* STREAMLIT TOOLBAR - Tamamen gizle */
+    .stToolbar {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    /* MAIN CONTAINER - Ana içerik alanı */
+    .main .block-container {
+        padding: 1rem 1rem 0rem 1rem !important;
+        margin-top: 0rem !important;
+        max-width: 100% !important;
+    }
+
+    /* STREAMLIT VIEW CONTAINER */
+    section[data-testid="stSidebar"] {
+        display: none !important;
+    }
+
+    /* BAŞLIK STİLİ - Görünür başlık */
+    .main-title {
+        background: linear-gradient(135deg, #00d4ff 0%, #667eea 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-size: 2.5rem !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        margin: 0 0 1rem 0 !important;
+        padding: 0 !important;
+    }
+
+    /* STATUS BAR */
+    .status-bar {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        color: #fafafa;
-        padding: 20px;
-        border-radius: 15px;
-        margin: 15px 0;
-        text-align: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        border: 1px solid #333;
+        padding: 8px 15px !important;
+        border-radius: 10px !important;
+        margin: 0 0 1rem 0 !important;
+        text-align: center !important;
+        border: 1px solid #333 !important;
+    }
+
+    /* PERSONA KARTLARI */
+    .persona-card {
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
+        color: #fafafa !important;
+        padding: 15px !important;
+        border-radius: 15px !important;
+        margin: 10px 0 !important;
+        text-align: center !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+        border: 1px solid #333 !important;
     }
 
     .persona-name {
-        font-size: 1.3rem;
-        font-weight: bold;
-        margin-bottom: 8px;
-        color: #00d4ff;
+        font-size: 1.3rem !important;
+        font-weight: bold !important;
+        margin-bottom: 8px !important;
+        color: #00d4ff !important;
     }
 
     .persona-stats {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.9rem;
-        opacity: 0.8;
-        color: #ccc;
+        display: flex !important;
+        justify-content: space-between !important;
+        font-size: 0.9rem !important;
+        opacity: 0.8 !important;
+        color: #ccc !important;
     }
 
-    /* Chat container */
+    /* CHAT CONTAINER */
     .chat-container {
-        background-color: #1a1a1a;
-        border-radius: 15px;
-        padding: 20px;
-        margin: 15px 0;
-        min-height: 400px;
-        max-height: 600px;
-        overflow-y: auto;
-        border: 1px solid #333;
+        background-color: #1a1a1a !important;
+        border-radius: 15px !important;
+        padding: 15px !important;
+        margin: 10px 0 !important;
+        min-height: 400px !important;
+        max-height: 500px !important;
+        overflow-y: auto !important;
+        border: 1px solid #333 !important;
     }
 
-    /* Mesaj balonları */
+    /* MESAJ BALONLARI */
     .message-bubble {
-        padding: 12px 18px;
-        border-radius: 20px;
-        margin-bottom: 12px;
-        max-width: 85%;
-        word-wrap: break-word;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        line-height: 1.5;
+        padding: 12px 18px !important;
+        border-radius: 20px !important;
+        margin-bottom: 12px !important;
+        max-width: 85% !important;
+        word-wrap: break-word !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+        line-height: 1.5 !important;
     }
 
     .user-bubble {
-        background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
-        color: #000;
-        align-self: flex-end;
-        margin-left: 15%;
-        font-weight: 500;
+        background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%) !important;
+        color: #000 !important;
+        margin-left: 15% !important;
+        font-weight: 500 !important;
     }
 
     .assistant-bubble {
-        background: linear-gradient(135deg, #333 0%, #555 100%);
-        color: #fafafa;
-        align-self: flex-start;
-        margin-right: 15%;
-        border: 1px solid #444;
-    }
-
-    /* Thinking process */
-    .thinking-header {
-        background: linear-gradient(135deg, #2d1b69 0%, #1a1a2e 100%);
-        color: #fafafa;
-        padding: 10px 15px;
-        border-radius: 10px;
-        margin: 10px 0;
-        font-size: 0.9rem;
-        border: 1px solid #444;
-    }
-
-    /* Chat input */
-    .stChatInput input {
-        background-color: #262730 !important;
+        background: linear-gradient(135deg, #333 0%, #555 100%) !important;
         color: #fafafa !important;
+        margin-right: 15% !important;
         border: 1px solid #444 !important;
-        border-radius: 25px !important;
     }
 
-    /* Buttons */
-    .stButton button {
-        background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
-        color: #000;
-        border: none;
-        border-radius: 25px;
-        font-weight: bold;
-        padding: 8px 20px;
-        transition: all 0.3s ease;
-    }
-
-    .stButton button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,212,255,0.3);
-    }
-
-    /* Expander */
+    /* THINKING PROCESS */
     .streamlit-expanderHeader {
         background-color: #262730 !important;
         color: #fafafa !important;
         border: 1px solid #444 !important;
         border-radius: 10px !important;
+        margin: 5px 0 !important;
     }
 
     .streamlit-expanderContent {
         background-color: #1a1a1a !important;
         color: #ccc !important;
         border: 1px solid #333 !important;
+        border-top: none !important;
+        border-radius: 0 0 10px 10px !important;
+        padding: 10px !important;
     }
 
-    /* Status indicators */
+    /* CHAT INPUT */
+    .stChatInput > div {
+        background-color: #262730 !important;
+        border-radius: 25px !important;
+        border: 1px solid #444 !important;
+    }
+
+    .stChatInput input {
+        background-color: #262730 !important;
+        color: #fafafa !important;
+        border: none !important;
+        border-radius: 25px !important;
+    }
+
+    .stChatInput input::placeholder {
+        color: #888 !important;
+    }
+
+    /* BUTTONS */
+    .stButton > button {
+        background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%) !important;
+        color: #000 !important;
+        border: none !important;
+        border-radius: 25px !important;
+        font-weight: bold !important;
+        padding: 8px 20px !important;
+        transition: all 0.3s ease !important;
+        margin: 5px 0 !important;
+    }
+
+    .stButton > button:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(0,212,255,0.3) !important;
+    }
+
+    /* STATUS INDICATORS */
     .status-success { 
-        color: #00ff88; 
-        font-weight: bold;
+        color: #00ff88 !important; 
+        font-weight: bold !important;
     }
 
     .status-error { 
-        color: #ff4444; 
-        font-weight: bold;
+        color: #ff4444 !important; 
+        font-weight: bold !important;
     }
 
-    /* Scrollbar */
+    /* SUCCESS/ERROR MESSAGES */
+    .stSuccess {
+        background-color: rgba(0, 255, 136, 0.1) !important;
+        border: 1px solid #00ff88 !important;
+        border-radius: 10px !important;
+        color: #00ff88 !important;
+    }
+
+    .stError {
+        background-color: rgba(255, 68, 68, 0.1) !important;
+        border: 1px solid #ff4444 !important;
+        border-radius: 10px !important;
+        color: #ff4444 !important;
+    }
+
+    /* SCROLLBAR */
     ::-webkit-scrollbar {
-        width: 8px;
+        width: 8px !important;
     }
 
     ::-webkit-scrollbar-track {
-        background: #1a1a1a;
-        border-radius: 10px;
+        background: #1a1a1a !important;
+        border-radius: 10px !important;
     }
 
     ::-webkit-scrollbar-thumb {
-        background: #444;
-        border-radius: 10px;
+        background: #444 !important;
+        border-radius: 10px !important;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-        background: #666;
+        background: #666 !important;
+    }
+
+    /* DIVIDER */
+    hr {
+        border: none !important;
+        height: 1px !important;
+        background: linear-gradient(90deg, transparent, #333, transparent) !important;
+        margin: 1rem 0 !important;
+    }
+
+    /* FOOTER */
+    .footer-text {
+        text-align: center !important;
+        color: #888 !important;
+        font-size: 0.9rem !important;
+        margin: 1rem 0 0 0 !important;
+        padding: 0 !important;
+    }
+
+    /* HIDE STREAMLIT ELEMENTS */
+    #MainMenu, footer, .stActionButton {
+        display: none !important;
+    }
+
+    /* RESPONSIVE DESIGN */
+    @media (max-width: 768px) {
+        .main-title {
+            font-size: 2rem !important;
+        }
+
+        .message-bubble {
+            max-width: 95% !important;
+        }
+
+        .persona-card {
+            margin: 5px 0 !important;
+            padding: 10px !important;
+        }
+
+        .chat-container {
+            min-height: 300px !important;
+            max-height: 400px !important;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -226,8 +339,8 @@ def setup_encoding():
 
 
 class PersonaAgent:
-    def __init__(self, persona_name="tugrul_bey", log_container=None):
-        """Persona tabanlı AI agent - Sadece Gemini API"""
+    def __init__(self, persona_name="tugrul_eski", log_container=None):
+        """Persona tabanlı AI agent"""
         setup_encoding()
 
         self.persona_name = persona_name
@@ -242,7 +355,7 @@ class PersonaAgent:
         self.smithery_profile = os.getenv("SMITHERY_PROFILE")
 
         if not self.smithery_api_key or not self.smithery_profile:
-            self.log("⚠️ Web arama devre dışı (Smithery API yok)")
+            self.log("⚠️ Web arama devre dışı")
 
         # Gemini modelini başlat
         self._initialize_model()
@@ -252,7 +365,7 @@ class PersonaAgent:
         self.conversation_history = []
 
     def _load_gemini_keys(self):
-        """14 Gemini API key'ini yükle"""
+        """Gemini API key'lerini yükle"""
         api_keys = []
 
         # Ana key
@@ -368,7 +481,7 @@ BİLGİN:
 KURALLAR:
 - Karakterine uygun davran
 - Kısa ve öz cevap ver
-- Saygılı ol"""
+- Tartışmacı ve ikna edici ol """
 
     async def sequential_think(self, prompt: str, stage_name: str):
         """Sequential Thinking adımı"""
@@ -533,8 +646,13 @@ def main():
     """Ana uygulama"""
     init_session_state()
 
-    # Header
-    st.markdown("# 🎭 Mini Microcosmos")
+    # Ana başlık - Ortalanmış ve stilize edilmiş
+    st.markdown('''
+    <div class="custom-header">
+        <h1>🎭 Mini-Microcosmos</h1>
+        <p>AI Persona Simulator - Sequential Thinking Architecture</p>
+    </div>
+    ''', unsafe_allow_html=True)
 
     # API key kontrolü
     gemini_keys = []
@@ -552,15 +670,18 @@ def main():
         st.info("config/.env dosyasına API keylerini ekleyin")
         st.stop()
     else:
-        st.markdown(f'<div class="status-success">✅ {len(gemini_keys)} Gemini API Key aktif</div>',
-                    unsafe_allow_html=True)
+        st.markdown(f'''
+        <div class="status-bar">
+            <span class="status-success">✅ {len(gemini_keys)} Gemini API Key aktif</span>
+        </div>
+        ''', unsafe_allow_html=True)
 
     # Agent initialization
     if not st.session_state.agents_initialized:
         with st.spinner("🤖 Agent'lar yükleniyor..."):
             try:
-                st.session_state.tugrul_agent = get_cached_agent("tugrul_bey")
-                st.session_state.yeni_tugrul_agent = get_cached_agent("yeni_tugrul")
+                st.session_state.tugrul_agent = get_cached_agent("tugrul_eski")
+                st.session_state.yeni_tugrul_agent = get_cached_agent("tugrul_yeni")
                 st.session_state.agents_initialized = True
                 st.success("✅ Agent'lar hazır!")
             except Exception as e:
@@ -576,7 +697,7 @@ def main():
         <div class="persona-card">
             <div class="persona-name">🎯 Eski Tuğrul</div>
             <div class="persona-stats">
-                <span>MHP/Ülkücü</span>
+                <span>Eski Milliyetçi Persona</span>
                 <span>Milliyetçi</span>
             </div>
         </div>
@@ -598,7 +719,7 @@ def main():
         <div class="persona-card">
             <div class="persona-name">🔄 Yeni Tuğrul</div>
             <div class="persona-stats">
-                <span>CHP Geçiş</span>
+                <span>Yeni Milliyetçi - CHP Geçiş</span>
                 <span>Değişen Profil</span>
             </div>
         </div>
@@ -615,7 +736,7 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
     # Chat input
-    st.markdown("---")
+    st.markdown("<hr>", unsafe_allow_html=True)
 
     if prompt := st.chat_input("🎭 Tuğrullara bir şey sor..."):
         if not st.session_state.processing:
@@ -662,7 +783,7 @@ def main():
                 st.rerun()
 
     # Control panel
-    st.markdown("---")
+    st.markdown("<hr>", unsafe_allow_html=True)
     control_col1, control_col2 = st.columns(2)
 
     with control_col1:
@@ -681,8 +802,8 @@ def main():
                 st.success("🔄 API değiştirildi!")
 
     # Footer
-    st.markdown("---")
-    st.markdown("**🎭 Mini Microcosmos** - AI Persona Simulator")
+    st.markdown('<p class="footer-text"><strong>🎭 Mini Microcosmos</strong> - AI Persona Simulator - developed by Baran Can Ercan with <3 🎭 </p>',
+                unsafe_allow_html=True)
 
 
 if __name__ == "__main__":

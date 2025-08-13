@@ -1,3 +1,5 @@
+# Mini Microcosmos - Git Ignore Rules
+
 # Python
 __pycache__/
 *.py[cod]
@@ -19,8 +21,9 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# Environment
+# Environment & Secrets
 .env
 .venv
 env/
@@ -28,26 +31,61 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+*.secret
+api_keys.txt
+config/.env
 
-# IDE
+# IDE Files
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
+.vs/
+.devcontainer/
 
-# OS
+# OS Files
 .DS_Store
 .DS_Store?
 ._*
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Logs
+# Logs & Cache
 *.log
 logs/
 temp/
 cache/
+.cache/
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Project specific
-api_keys.txt
-*.secret
+# Streamlit
+.streamlit/secrets.toml
+
+# Project Specific
+*.backup
+*.bak
+node_modules/
+.npm/
+.yarn/
+
+# Documentation Build
+docs/_build/
+site/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# AI Model Files (if any)
+*.pkl
+*.model
+models/

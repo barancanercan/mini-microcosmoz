@@ -1,321 +1,321 @@
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+/* Mini Microcosmos - Fixed CSS Styles */
+
+* {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
 }
 
+/* STREAMLIT CONTAINER SIFIRLAMA */
+.main .block-container {
+    padding-top: 0rem !important;
+    padding-bottom: 0rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+    max-width: 100% !important;
+}
+
+/* STREAMLIT HEADER GİZLE */
+.stApp > header {
+    background-color: transparent !important;
+    height: 0rem !important;
+    display: none !important;
+}
+
+/* STREAMLIT TOOLBAR GİZLE */
+.stApp > .stToolbar {
+    display: none !important;
+}
+
+/* STREAMLIT VIEW CONTAINER */
+.stApp > .main > .block-container {
+    padding-top: 0rem !important;
+    padding-bottom: 1rem !important;
+}
+
+/* ANA TEMA - FULL BLACK */
 .stApp {
-    background-color: #f0f2f5;
+    background-color: #0e1117 !important;
+    color: #fafafa !important;
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
-.main-container {
-    padding-top: 1rem;
+/* SIDEBAR */
+.css-1d391kg, .css-1cypcdb, .css-17eq0hr {
+    background-color: #262730 !important;
 }
 
-.chat-column {
-    border-radius: 12px;
-    background-color: #ffffff;
-    padding: 0;
-    height: 85vh;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+/* STREAMLIT MAIN CONTAINER */
+.css-18e3th9, .css-1d391kg, .css-12oz5g7 {
+    padding-top: 0rem !important;
+    margin-top: 0rem !important;
 }
 
-.chat-header {
-    font-size: 20px;
-    font-weight: bold;
-    text-align: center;
-    padding: 15px;
-    background-color: #075e54;
-    color: white;
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
-    margin: 0;
+/* MARKDOWN BAŞLIKLAR - ÜST BOŞLUK KALDIR */
+.stMarkdown h1,
+.stMarkdown h2,
+.stMarkdown h3 {
+    margin-top: 0rem !important;
+    margin-bottom: 0.5rem !important;
+    padding-top: 0rem !important;
 }
 
-.thinking-section {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #e0e0e0;
-    padding: 0;
+/* İLK BAŞLIK ÖZEL DÜZENLEME */
+.stMarkdown h1:first-child {
+    margin-top: -1rem !important;
+    padding-top: 0rem !important;
 }
 
-.thinking-box {
-    background-color: #f8f9fa;
-    padding: 10px;
-    font-size: 0.85rem;
-    color: #495057;
-    max-height: 200px;
-    overflow-y: auto;
-    border: none;
-}
-
-.chat-container {
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    min-height: 400px;
-    max-height: 500px;
-}
-
-.message-bubble {
-    padding: 10px 16px;
-    border-radius: 18px;
-    margin-bottom: 10px;
-    max-width: 85%;
-    word-wrap: break-word;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    line-height: 1.4;
-}
-
-.user-bubble {
-    background-color: #dcf8c6;
-    align-self: flex-end;
-    color: #000;
-}
-
-.assistant-bubble {
-    background-color: #ffffff;
-    align-self: flex-start;
-    border: 1px solid #f0f0f0;
-    color: #000;
-}
-
-/* Streamlit expander özelleştirmeleri */
-.stExpander {
-    border: none !important;
-    box-shadow: none !important;
-    background-color: #f8f9fa !important;
-}
-
-.stExpander > div[data-testid="stExpanderDetails"] {
-    background-color: #f8f9fa !important;
-    padding: 10px !important;
-    border: none !important;
-}
-
-/* Chat input stil */
-.stChatInput {
-    position: fixed;
-    bottom: 20px;
-    left: 0;
-    right: 0;
-    background-color: white;
-    border-top: 1px solid #e0e0e0;
-    padding: 10px;
-    z-index: 1000;
-}
-
-/* ===== YENİ EKLENENLER ===== */
-
-/* Sequential Thinking Indicators */
-.thinking-stage {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    margin: 4px;
-    display: inline-block;
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.7; }
-    100% { opacity: 1; }
-}
-
-/* MCP Connection Status */
-.mcp-status {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: bold;
-    z-index: 1001;
-}
-
-.mcp-connected {
-    background-color: #28a745;
-    color: white;
-}
-
-.mcp-disconnected {
-    background-color: #dc3545;
-    color: white;
-}
-
-.mcp-connecting {
-    background-color: #ffc107;
-    color: black;
-    animation: blink 1s infinite;
-}
-
-@keyframes blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0.5; }
-}
-
-/* Sequential Steps Visualization */
-.sequential-steps {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
-    background-color: #e9ecef;
-    border-radius: 8px;
-    margin: 5px 0;
-}
-
-.step {
-    flex: 1;
-    text-align: center;
-    padding: 8px;
-    margin: 0 2px;
-    border-radius: 6px;
-    font-size: 0.7rem;
-    transition: all 0.3s ease;
-}
-
-.step-pending {
-    background-color: #f8f9fa;
-    color: #6c757d;
-    border: 1px solid #dee2e6;
-}
-
-.step-active {
-    background-color: #007bff;
-    color: white;
-    transform: scale(1.05);
-    box-shadow: 0 2px 4px rgba(0,123,255,0.3);
-}
-
-.step-completed {
-    background-color: #28a745;
-    color: white;
-}
-
-.step-error {
-    background-color: #dc3545;
-    color: white;
-}
-
-/* Web Search Results */
-.web-search-results {
-    background-color: #fff3cd;
-    border-left: 4px solid #ffc107;
-    padding: 10px;
-    margin: 8px 0;
-    border-radius: 0 6px 6px 0;
-}
-
-.web-search-header {
-    font-weight: bold;
-    color: #856404;
-    margin-bottom: 5px;
-    display: flex;
-    align-items: center;
-}
-
-.web-search-header::before {
-    content: "🔍";
-    margin-right: 8px;
-}
-
-/* API Key Status */
-.api-status {
-    position: fixed;
-    bottom: 80px;
-    right: 10px;
-    background-color: rgba(0,0,0,0.8);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 15px;
-    font-size: 0.7rem;
-    z-index: 1001;
-}
-
-/* Progress Steps */
-.progress-steps {
-    width: 100%;
-    background-color: #e9ecef;
-    height: 4px;
-    border-radius: 2px;
-    margin: 10px 0;
-}
-
-.progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #28a745, #20c997, #17a2b8);
-    border-radius: 2px;
-    transition: width 0.5s ease;
-    position: relative;
-}
-
-.progress-bar::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 100%;
-    width: 20px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6));
-    animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-    0% { transform: translateX(-20px); }
-    100% { transform: translateX(100px); }
-}
-
-/* Persona Cards */
+/* KART STİLLERİ */
 .persona-card {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 15px;
-    border-radius: 12px;
-    margin: 10px 0;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
+    color: #fafafa !important;
+    padding: 15px !important;
+    border-radius: 15px !important;
+    margin: 10px 0 !important;
+    text-align: center !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+    border: 1px solid #333 !important;
 }
 
 .persona-name {
-    font-size: 1.1rem;
-    font-weight: bold;
-    margin-bottom: 8px;
+    font-size: 1.3rem !important;
+    font-weight: bold !important;
+    margin-bottom: 8px !important;
+    color: #00d4ff !important;
 }
 
 .persona-stats {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    opacity: 0.9;
+    display: flex !important;
+    justify-content: space-between !important;
+    font-size: 0.9rem !important;
+    opacity: 0.8 !important;
+    color: #ccc !important;
 }
 
-/* Responsive Design */
+/* CHAT CONTAINER */
+.chat-container {
+    background-color: #1a1a1a !important;
+    border-radius: 15px !important;
+    padding: 15px !important;
+    margin: 10px 0 !important;
+    min-height: 400px !important;
+    max-height: 600px !important;
+    overflow-y: auto !important;
+    border: 1px solid #333 !important;
+}
+
+/* MESAJ BALONLARI */
+.message-bubble {
+    padding: 12px 18px !important;
+    border-radius: 20px !important;
+    margin-bottom: 12px !important;
+    max-width: 85% !important;
+    word-wrap: break-word !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+    line-height: 1.5 !important;
+    display: block !important;
+}
+
+.user-bubble {
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%) !important;
+    color: #000 !important;
+    margin-left: 15% !important;
+    font-weight: 500 !important;
+}
+
+.assistant-bubble {
+    background: linear-gradient(135deg, #333 0%, #555 100%) !important;
+    color: #fafafa !important;
+    margin-right: 15% !important;
+    border: 1px solid #444 !important;
+}
+
+/* THINKING PROCESS */
+.thinking-header {
+    background: linear-gradient(135deg, #2d1b69 0%, #1a1a2e 100%) !important;
+    color: #fafafa !important;
+    padding: 10px 15px !important;
+    border-radius: 10px !important;
+    margin: 8px 0 !important;
+    font-size: 0.9rem !important;
+    border: 1px solid #444 !important;
+}
+
+/* CHAT INPUT */
+.stChatInput > div {
+    background-color: #262730 !important;
+    border-radius: 25px !important;
+    border: 1px solid #444 !important;
+}
+
+.stChatInput input {
+    background-color: #262730 !important;
+    color: #fafafa !important;
+    border: none !important;
+    border-radius: 25px !important;
+}
+
+.stChatInput input::placeholder {
+    color: #888 !important;
+}
+
+/* BUTTONS */
+.stButton > button {
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%) !important;
+    color: #000 !important;
+    border: none !important;
+    border-radius: 25px !important;
+    font-weight: bold !important;
+    padding: 8px 20px !important;
+    transition: all 0.3s ease !important;
+    margin: 5px 0 !important;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 4px 12px rgba(0,212,255,0.3) !important;
+}
+
+.stButton > button:focus {
+    box-shadow: 0 0 0 2px rgba(0,212,255,0.5) !important;
+}
+
+/* EXPANDER */
+.streamlit-expanderHeader {
+    background-color: #262730 !important;
+    color: #fafafa !important;
+    border: 1px solid #444 !important;
+    border-radius: 10px !important;
+    margin: 5px 0 !important;
+}
+
+.streamlit-expanderContent {
+    background-color: #1a1a1a !important;
+    color: #ccc !important;
+    border: 1px solid #333 !important;
+    border-top: none !important;
+    border-radius: 0 0 10px 10px !important;
+    padding: 10px !important;
+}
+
+/* COLUMNS */
+.css-ocqkz7, .css-1kyxreq {
+    margin-top: 0rem !important;
+    padding-top: 0rem !important;
+}
+
+/* STATUS INDICATORS */
+.status-success {
+    color: #00ff88 !important;
+    font-weight: bold !important;
+}
+
+.status-error {
+    color: #ff4444 !important;
+    font-weight: bold !important;
+}
+
+.status-warning {
+    color: #ffaa00 !important;
+    font-weight: bold !important;
+}
+
+/* SPINNER VE LOADING */
+.stSpinner {
+    color: #00d4ff !important;
+}
+
+/* SUCCESS/ERROR MESSAGES */
+.stSuccess {
+    background-color: rgba(0, 255, 136, 0.1) !important;
+    border: 1px solid #00ff88 !important;
+    border-radius: 10px !important;
+    color: #00ff88 !important;
+}
+
+.stError {
+    background-color: rgba(255, 68, 68, 0.1) !important;
+    border: 1px solid #ff4444 !important;
+    border-radius: 10px !important;
+    color: #ff4444 !important;
+}
+
+.stInfo {
+    background-color: rgba(0, 212, 255, 0.1) !important;
+    border: 1px solid #00d4ff !important;
+    border-radius: 10px !important;
+    color: #00d4ff !important;
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar {
+    width: 8px !important;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a1a !important;
+    border-radius: 10px !important;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #444 !important;
+    border-radius: 10px !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #666 !important;
+}
+
+/* RESPONSIVE DESIGN */
 @media (max-width: 768px) {
-    .chat-column {
-        height: 70vh;
-    }
-
     .message-bubble {
-        max-width: 95%;
+        max-width: 95% !important;
     }
 
-    .sequential-steps {
-        flex-direction: column;
+    .persona-card {
+        margin: 5px 0 !important;
+        padding: 10px !important;
     }
 
-    .step {
-        margin: 2px 0;
+    .chat-container {
+        min-height: 300px !important;
+        max-height: 400px !important;
     }
+}
 
-    .mcp-status, .api-status {
-        position: relative;
-        top: auto;
-        right: auto;
-        margin: 10px 0;
-    }
+/* ADDITIONAL STREAMLIT FIXES */
+div[data-testid="stMarkdownContainer"] > div:first-child {
+    margin-top: 0rem !important;
+}
+
+div[data-testid="column"] {
+    padding-top: 0rem !important;
+}
+
+/* FORCE REMOVE ANY TOP SPACING */
+.main .block-container > div:first-child {
+    margin-top: -2rem !important;
+}
+
+/* HIDE DEPLOY BUTTON */
+.stActionButton {
+    display: none !important;
+}
+
+/* HIDE STREAMLIT MENU */
+#MainMenu {
+    display: none !important;
+}
+
+/* HIDE FOOTER */
+footer {
+    display: none !important;
+}
+
+/* FORCE FULL HEIGHT */
+html, body, [data-testid="stAppViewContainer"] {
+    height: 100vh !important;
+    overflow-x: hidden !important;
 }
