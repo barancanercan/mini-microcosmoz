@@ -1,138 +1,181 @@
 # 🎭 Mini Microcosmos - AI Persona Simulator
 
-Türkiye'deki kararsız-küskün seçmen profillerini AI ajanları ile simüle eden proje.
+Türkiye'deki kararsız-küskün seçmen profillerini **Sequential Thinking** mimarisi ile simüle eden AI projesi.
 
-## 📋 Özellikler
+## ✨ Özellikler
 
-- **Persona Tabanlı Sohbet**: Farklı seçmen profillerinde AI ajanları
-- **Sequential Thinking**: Gemini tabanlı düşünme mimarisi  
-- **Web Arama Entegrasyonu**: Güncel bilgilere erişim
-- **Gündem Özetleme**: Otomatik haber analizi
-- **Çoklu API Desteği**: Quota aşımında otomatik geçiş
+- **🧠 Sequential Thinking Pipeline**: 7 aşamalı düşünce süreci
+- **🔍 Gerçek Zamanlı Web Araması**: MCP protokolü ile güncel bilgi
+- **🎭 Çoklu Persona**: Farklı seçmen profillerinde AI ajanları  
+- **⚡ Paralel İşlem**: Aynı anda iki persona ile sohbet
+- **📊 Detaylı Logging**: Tüm düşünce süreçlerini izleme
 
-## 🚀 Kurulum
+## 🚀 Hızlı Başlangıç
 
-1. **Repo'yu klonlayın**:
+### 1. Kurulum
 ```bash
-git clone https://github.com/username/mini-microcozmos.git
+git clone <repo-url>
 cd mini-microcozmos
-```
-
-2. **Virtual environment oluşturun**:
-```bash
 python -m venv .venv
 source .venv/bin/activate  # Linux/Mac
-# veya
-.venv\Scripts\activate     # Windows
-```
-
-3. **Gereksinimleri yükleyin**:
-```bash
+# .venv\Scripts\activate   # Windows
 pip install -r requirements.txt
 ```
 
-4. **Çevre değişkenlerini ayarlayın**:
+### 2. API Keys Ayarlama
 ```bash
-cp .env.example .env
-# .env dosyasını düzenleyin ve API keylerini ekleyin
+cp config/.env.example config/.env
 ```
 
-## 🔧 Konfigürasyon
+`config/.env` dosyasına API keylerini ekleyin:
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+SMITHERY_API_KEY=your_smithery_api_key  
+SMITHERY_PROFILE=your_smithery_profile
+```
 
-### API Keys
-
-#### Gemini API Keys
-- [Google AI Studio](https://aistudio.google.com/)dan API key alın
-- Birden fazla key ekleyebilirsiniz (quota aşımında otomatik geçiş)
-
-#### Smithery API (Web Arama)
-- Web arama fonksiyonları için gerekli
-- `SMITHERY_API_KEY` ve `SMITHERY_PROFILE` ayarlayın
-
-## 📱 Kullanım
-
+### 3. Çalıştırma
 ```bash
-python main.py
+streamlit run src/ui/streamlit_app_groq.py
 ```
 
-### Komutlar
-- Normal sohbet için herhangi bir mesaj yazın
-- `switch` - Manuel API key değiştir
-- `quit` / `exit` - Çıkış
+## 🎯 Persona'lar
 
-## 👥 Persona'lar
+### Mevcut Karakterler:
+- **🎯 Eski Tuğrul**: MHP/Ülkücü, milliyetçi esnaf
+- **🔄 Yeni Tuğrul**: CHP'ye geçiş yapan, değişen profil
+- **👵 Hatice Teyze**: Muhafazakar, 61 yaşında ev hanımı  
+- **👩 Elif**: 23 yaşında üniversiteli, feminist
+- **👨 Kenan Bey**: 36 yaşında, Kemalist, eğitimli
 
-### Mevcut Persona'lar:
-- **Tuğrul Bey**: 40'lı yaşlarda, milliyetçi, esnaf
-- **Hatice Teyze**: 61 yaşında, muhafazakar, ev hanımı  
-- **Elif**: 23 yaşında, üniversite öğrencisi, feminist
-- **Kenan Bey**: 36 yaşında, Kemalist, eğitimli
+## 🧠 Sequential Thinking Pipeline
 
-### Persona Yapısı:
-```json
-{
-  "name": "Persona Adı",
-  "bio": ["Temel bilgiler..."],
-  "lore": ["Detaylı geçmiş..."],
-  "knowledge": ["Bilgi kaynakları..."],
-  "style": {
-    "chat": ["Konuşma tarzı..."],
-    "post": ["Paylaşım tarzı..."]
-  }
-}
+Sistem her soruya 7 aşamalı düşünce süreci uygular:
+
+1. **📝 SORU_ANALIZI** - Kullanıcı isteğini anlama
+2. **🔍 ARAMA_KARARI** - Web araması gerekli mi?
+3. **🎯 ARAMA_TERIMLERI** - En uygun anahtar kelimeler
+4. **📡 WEB ARAMA** - 4 farklı kaynaktan veri toplama
+5. **📰 HABER_ANALIZI** - Sonuçları persona perspektifinden değerlendirme
+6. **📋 CEVAP_PLANLAMA** - Response stratejisini belirleme
+7. **💬 FINAL_CEVAP** - Karakter uygun yanıt üretme
+
+## 🔧 Teknoloji Stack
+
+- **🤖 AI Model**: Google Gemini 1.5 Flash
+- **🌐 Web Search**: Smithery API + MCP Protocol
+- **🖥️ UI Framework**: Streamlit
+- **🐍 Backend**: Python 3.10+
+- **⚡ Async**: AsyncIO ile paralel işlem
+
+## 📁 Proje Yapısı
+
+```
+mini-microcozmos/
+├── src/
+│   ├── personas/          # JSON persona dosyaları
+│   ├── ui/               # Streamlit arayüzü
+│   └── agents/           # Agent sınıfları
+├── config/               # Konfigürasyon dosyaları
+├── static/css/           # CSS stilleri
+├── app.py               # Ana uygulama
+└── requirements.txt     # Python bağımlılıkları
 ```
 
-## 🏗️ Mimari
+## 🌐 API Gereksinimleri
 
-### Sequential Thinking Pipeline:
-1. **Soru Analizi**: Kullanıcı sorgusunu çözümle
-2. **Arama Kararı**: Web araması gerekli mi?
-3. **Arama Terimleri**: En uygun anahtar kelimeler
-4. **Gündem Özetleme**: Haber sonuçlarını özetle
-5. **Cevap Planlama**: Response stratejisini belirle
-6. **Final Cevap**: Persona karakterinde yanıtla
+### Zorunlu:
+- **Gemini API**: Ana LLM modeli için
+  - [Google AI Studio](https://aistudio.google.com/)dan alın
 
-### Teknolojiler:
-- **Google Gemini**: Ana LLM motoru
-- **MCP Protocol**: Web arama entegrasyonu  
-- **Smithery API**: Güncel haber kaynakları
-- **Async Python**: Performanslı I/O işlemleri
+### Opsiyonel:
+- **Smithery API**: Web arama için
+  - Olmadan da çalışır, sadece güncel bilgi alamaz
 
-## 📊 Özellik Detayları
+## ⚙️ Konfigürasyon
 
-### Web Arama
-- Çoklu arama stratejisi
-- Site analizi ve doğrulama
-- Tarih kontrolü (Temmuz 2025 odaklı)
-- Otomatik gündem özetleme
+### Environment Variables:
+```env
+# Ana API (zorunlu)
+GEMINI_API_KEY=your_key_here
 
-### AI Ajanları  
-- Persona tabanlı kimlik
-- Bilinçaltı siyasi hafıza
-- Gerçekçi konuşma tarzları
-- Güncel olay yorumlama
+# Web arama (opsiyonel)
+SMITHERY_API_KEY=your_key
+SMITHERY_PROFILE=your_profile
 
-### Güvenlik
-- API key rotasyonu
-- Encoding güvenliği (UTF-8)
-- Hata toleransı
-- Quota yönetimi
+# Alternatif API'lar (opsiyonel)
+GROQ_API_KEY=your_groq_key
+OPENAI_API_KEY=your_openai_key
+```
+
+### Streamlit Config:
+```toml
+[server]
+port = 8501
+enableCORS = false
+
+[theme]
+primaryColor = "#667eea"
+backgroundColor = "#f0f2f5"
+```
+
+## 🧪 Test Edilen Senaryolar
+
+✅ **Güncel siyasi sorular** - Web araması ile güncel bilgi  
+✅ **Ekonomi tartışmaları** - Persona bazlı görüş farklılıkları  
+✅ **Sosyal konular** - Karakter tutarlılığı  
+✅ **Paralel sohbet** - İki persona aynı anda  
+✅ **API rotasyonu** - Quota aşımında otomatik geçiş  
+
+## 🚨 Bilinen Sınırlamalar
+
+- Web arama Smithery API'ya bağımlı
+- Gemini API quota limitli
+- Sadece Türkçe optimize edilmiş
+- Persona'lar gerçek kişileri temsil etmez
 
 ## 🤝 Katkıda Bulunma
 
 1. Fork yapın
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Değişiklikleri commit edin (`git commit -m 'Add amazing feature'`)
-4. Branch'i push edin (`git push origin feature/amazing-feature`)
+2. Feature branch oluşturun: `git checkout -b feature/amazing-feature`
+3. Commit yapın: `git commit -m 'Add amazing feature'`
+4. Push edin: `git push origin feature/amazing-feature`
 5. Pull Request açın
 
 ## 📄 Lisans
 
-Bu proje [MIT Lisansı](LICENSE) altında lisanslanmıştır.
+Bu proje MIT Lisansı altında lisanslanmıştır.
 
 ## ⚠️ Uyarılar
 
-- Bu proje araştırma ve eğitim amaçlıdır
-- Persona'lar gerçek kişileri temsil etmez
-- AI yanıtları bilimsel referans değildir
-- API kullanım limitlerini kontrol edin# mini-microcosmoz
+- Bu proje **araştırma ve eğitim** amaçlıdır
+- Persona'lar **gerçek kişileri temsil etmez**
+- AI yanıtları **bilimsel referans değildir**
+- API kullanım limitlerini kontrol edin
+
+## 🆘 Sorun Giderme
+
+### Uygulama başlamıyor:
+```bash
+pip install --upgrade streamlit
+streamlit run src/ui/streamlit_app_groq.py
+```
+
+### API hatası:
+- `config/.env` dosyasını kontrol edin
+- API key'lerin geçerli olduğundan emin olun
+- Quota limitlerini kontrol edin
+
+### Persona yüklenmiyor:
+- `src/personas/` klasörünü kontrol edin
+- JSON syntax hatalarını kontrol edin
+
+## 📞 İletişim
+
+- **Issues**: GitHub Issues kullanın
+- **Discussions**: GitHub Discussions
+- **Email**: [proje maintainer email]
+
+---
+
+**🎭 Mini Microcosmos** - Sequential Thinking ile güvenli AI persona simülasyonu
