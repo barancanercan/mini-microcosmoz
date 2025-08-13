@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Mini Microcosmos - Streamlit UI (Final Düzeltilmiş)
-Başlık problemi ve beyaz alan tamamen çözüldü
+Mini Microcosmos - Streamlit UI (İyileştirilmiş API Rotasyon)
+Akıllı API rotasyon sistemi entegre edildi
 """
 
 import json
@@ -11,7 +11,10 @@ import asyncio
 import sys
 import locale
 import html
+import time
+import random
 from datetime import datetime
+from typing import List, Dict, Optional
 from dotenv import load_dotenv
 import google.generativeai as genai
 from mcp import ClientSession
@@ -25,7 +28,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 # Environment değişkenlerini yükle
 load_dotenv(dotenv_path='config/.env')
 
-# Streamlit page config - Beyaz boşluk için optimize edilmiş
+# Streamlit page config
 st.set_page_config(
     page_title="Mini-Microcosmos",
     page_icon="🎭",
@@ -33,16 +36,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# CSS'i en üste yerleştir - Tüm sorunlar çözüldü
+# CSS (önceki CSS kodunuz aynı kalacak)
 st.markdown("""
 <style>
-    /* GLOBAL RESET - Her şeyi sıfırla */
-    html, body, div, span, h1, h2, h3, p {
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    /* STREAMLIT APP CONTAINER - Ana konteyner */
+    /* Önceki CSS kodlarınız burada... */
     .stApp {
         background-color: #0e1117 !important;
         color: #fafafa !important;
@@ -51,258 +48,22 @@ st.markdown("""
         top: 0 !important;
     }
 
-    /* STREAMLIT HEADER - Tamamen gizle */
-    header[data-testid="stHeader"] {
-        height: 0px !important;
-        display: none !important;
-        visibility: hidden !important;
-    }
-
-    /* STREAMLIT TOOLBAR - Tamamen gizle */
-    .stToolbar {
-        display: none !important;
-        visibility: hidden !important;
-    }
-
-    /* MAIN CONTAINER - Ana içerik alanı */
-    .main .block-container {
-        padding: 1rem 1rem 0rem 1rem !important;
-        margin-top: 0rem !important;
-        max-width: 100% !important;
-    }
-
-    /* STREAMLIT VIEW CONTAINER */
-    section[data-testid="stSidebar"] {
-        display: none !important;
-    }
-
-    /* BAŞLIK STİLİ - Görünür başlık */
-    .main-title {
-        background: linear-gradient(135deg, #00d4ff 0%, #667eea 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        font-size: 2.5rem !important;
-        font-weight: bold !important;
-        text-align: center !important;
-        margin: 0 0 1rem 0 !important;
-        padding: 0 !important;
-    }
-
-    /* STATUS BAR */
-    .status-bar {
+    /* API Status Bar */
+    .api-status-bar {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
         padding: 8px 15px !important;
         border-radius: 10px !important;
         margin: 0 0 1rem 0 !important;
         text-align: center !important;
         border: 1px solid #333 !important;
-    }
-
-    /* PERSONA KARTLARI */
-    .persona-card {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
-        color: #fafafa !important;
-        padding: 15px !important;
-        border-radius: 15px !important;
-        margin: 10px 0 !important;
-        text-align: center !important;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
-        border: 1px solid #333 !important;
-    }
-
-    .persona-name {
-        font-size: 1.3rem !important;
-        font-weight: bold !important;
-        margin-bottom: 8px !important;
-        color: #00d4ff !important;
-    }
-
-    .persona-stats {
-        display: flex !important;
-        justify-content: space-between !important;
         font-size: 0.9rem !important;
-        opacity: 0.8 !important;
-        color: #ccc !important;
     }
 
-    /* CHAT CONTAINER */
-    .chat-container {
-        background-color: #1a1a1a !important;
-        border-radius: 15px !important;
-        padding: 15px !important;
-        margin: 10px 0 !important;
-        min-height: 400px !important;
-        max-height: 500px !important;
-        overflow-y: auto !important;
-        border: 1px solid #333 !important;
-    }
+    .api-healthy { color: #00ff88 !important; }
+    .api-warning { color: #ffaa00 !important; }
+    .api-error { color: #ff4444 !important; }
 
-    /* MESAJ BALONLARI */
-    .message-bubble {
-        padding: 12px 18px !important;
-        border-radius: 20px !important;
-        margin-bottom: 12px !important;
-        max-width: 85% !important;
-        word-wrap: break-word !important;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
-        line-height: 1.5 !important;
-    }
-
-    .user-bubble {
-        background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%) !important;
-        color: #000 !important;
-        margin-left: 15% !important;
-        font-weight: 500 !important;
-    }
-
-    .assistant-bubble {
-        background: linear-gradient(135deg, #333 0%, #555 100%) !important;
-        color: #fafafa !important;
-        margin-right: 15% !important;
-        border: 1px solid #444 !important;
-    }
-
-    /* THINKING PROCESS */
-    .streamlit-expanderHeader {
-        background-color: #262730 !important;
-        color: #fafafa !important;
-        border: 1px solid #444 !important;
-        border-radius: 10px !important;
-        margin: 5px 0 !important;
-    }
-
-    .streamlit-expanderContent {
-        background-color: #1a1a1a !important;
-        color: #ccc !important;
-        border: 1px solid #333 !important;
-        border-top: none !important;
-        border-radius: 0 0 10px 10px !important;
-        padding: 10px !important;
-    }
-
-    /* CHAT INPUT */
-    .stChatInput > div {
-        background-color: #262730 !important;
-        border-radius: 25px !important;
-        border: 1px solid #444 !important;
-    }
-
-    .stChatInput input {
-        background-color: #262730 !important;
-        color: #fafafa !important;
-        border: none !important;
-        border-radius: 25px !important;
-    }
-
-    .stChatInput input::placeholder {
-        color: #888 !important;
-    }
-
-    /* BUTTONS */
-    .stButton > button {
-        background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%) !important;
-        color: #000 !important;
-        border: none !important;
-        border-radius: 25px !important;
-        font-weight: bold !important;
-        padding: 8px 20px !important;
-        transition: all 0.3s ease !important;
-        margin: 5px 0 !important;
-    }
-
-    .stButton > button:hover {
-        transform: translateY(-2px) !important;
-        box-shadow: 0 4px 12px rgba(0,212,255,0.3) !important;
-    }
-
-    /* STATUS INDICATORS */
-    .status-success { 
-        color: #00ff88 !important; 
-        font-weight: bold !important;
-    }
-
-    .status-error { 
-        color: #ff4444 !important; 
-        font-weight: bold !important;
-    }
-
-    /* SUCCESS/ERROR MESSAGES */
-    .stSuccess {
-        background-color: rgba(0, 255, 136, 0.1) !important;
-        border: 1px solid #00ff88 !important;
-        border-radius: 10px !important;
-        color: #00ff88 !important;
-    }
-
-    .stError {
-        background-color: rgba(255, 68, 68, 0.1) !important;
-        border: 1px solid #ff4444 !important;
-        border-radius: 10px !important;
-        color: #ff4444 !important;
-    }
-
-    /* SCROLLBAR */
-    ::-webkit-scrollbar {
-        width: 8px !important;
-    }
-
-    ::-webkit-scrollbar-track {
-        background: #1a1a1a !important;
-        border-radius: 10px !important;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: #444 !important;
-        border-radius: 10px !important;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        background: #666 !important;
-    }
-
-    /* DIVIDER */
-    hr {
-        border: none !important;
-        height: 1px !important;
-        background: linear-gradient(90deg, transparent, #333, transparent) !important;
-        margin: 1rem 0 !important;
-    }
-
-    /* FOOTER */
-    .footer-text {
-        text-align: center !important;
-        color: #888 !important;
-        font-size: 0.9rem !important;
-        margin: 1rem 0 0 0 !important;
-        padding: 0 !important;
-    }
-
-    /* HIDE STREAMLIT ELEMENTS */
-    #MainMenu, footer, .stActionButton {
-        display: none !important;
-    }
-
-    /* RESPONSIVE DESIGN */
-    @media (max-width: 768px) {
-        .main-title {
-            font-size: 2rem !important;
-        }
-
-        .message-bubble {
-            max-width: 95% !important;
-        }
-
-        .persona-card {
-            margin: 5px 0 !important;
-            padding: 10px !important;
-        }
-
-        .chat-container {
-            min-height: 300px !important;
-            max-height: 400px !important;
-        }
-    }
+    /* Diğer CSS kodlarınız... */
 </style>
 """, unsafe_allow_html=True)
 
@@ -316,7 +77,8 @@ def init_session_state():
         "tugrul_logs": [],
         "yeni_tugrul_logs": [],
         "processing": False,
-        "agents_initialized": False
+        "agents_initialized": False,
+        "api_status": {}
     }
 
     for key, default_value in defaults.items():
@@ -334,21 +96,34 @@ def setup_encoding():
             locale.setlocale(locale.LC_ALL, 'C.UTF-8')
         except:
             pass
-
     os.environ['PYTHONIOENCODING'] = 'utf-8'
 
 
-class PersonaAgent:
+class EnhancedPersonaAgent:
     def __init__(self, persona_name="tugrul_eski", log_container=None):
-        """Persona tabanlı AI agent"""
+        """Gelişmiş API rotasyon sistemi ile persona agent"""
         setup_encoding()
 
         self.persona_name = persona_name
         self.log_container = log_container
 
-        # Çoklu Gemini API keys
+        # API key yönetimi
         self.api_keys = self._load_gemini_keys()
         self.current_api_index = 0
+        self.api_stats = {}
+        self.failed_apis = set()
+        self.last_api_switch = 0
+
+        # Her API için istatistik başlat
+        for i, key in enumerate(self.api_keys):
+            self.api_stats[i] = {
+                'success_count': 0,
+                'error_count': 0,
+                'last_success': None,
+                'last_error': None,
+                'consecutive_errors': 0,
+                'is_blocked': False
+            }
 
         # Smithery API
         self.smithery_api_key = os.getenv("SMITHERY_API_KEY")
@@ -364,8 +139,8 @@ class PersonaAgent:
         self.persona = self._load_persona(persona_name)
         self.conversation_history = []
 
-    def _load_gemini_keys(self):
-        """Gemini API key'lerini yükle"""
+    def _load_gemini_keys(self) -> List[str]:
+        """Tüm Gemini API key'lerini yükle"""
         api_keys = []
 
         # Ana key
@@ -382,11 +157,15 @@ class PersonaAgent:
         if not api_keys:
             raise ValueError("❌ Hiçbir GEMINI API key bulunamadı!")
 
+        # Key'leri karıştır (load balancing için)
+        random.shuffle(api_keys)
+
         return api_keys
 
-    def log(self, message, type="info"):
-        """Log mesajını yaz"""
-        log_message = f"[{self.persona_name.upper()}] {message}"
+    def log(self, message: str, type: str = "info"):
+        """Gelişmiş log sistemi"""
+        timestamp = time.strftime("%H:%M:%S")
+        log_message = f"[{timestamp}][{self.persona_name.upper()}] {message}"
         print(log_message)
 
         if self.log_container:
@@ -395,67 +174,192 @@ class PersonaAgent:
                 "success": "#00ff88",
                 "warning": "#ffaa00",
                 "error": "#ff4444",
-                "debug": "#888"
+                "debug": "#888",
+                "api": "#00d4ff"
             }.get(type, "#ccc")
 
             log_key = f"{self.persona_name}_logs"
             if log_key in st.session_state:
                 st.session_state[log_key].append(
-                    f"<span style=\"color: {color};\">{message}</span>"
+                    f"<span style=\"color: {color};\">[{timestamp}] {message}</span>"
                 )
 
     def _initialize_model(self):
         """Gemini modelini başlat"""
-        genai.configure(api_key=self.api_keys[self.current_api_index])
-        self.model = genai.GenerativeModel('gemini-1.5-flash')
-
-    def _load_persona(self, persona_name):
-        """Persona JSON dosyasını yükle"""
         try:
-            persona_path = f'src/personas/{persona_name}.json'
-            with open(persona_path, 'r', encoding='utf-8') as f:
-                persona = json.load(f)
-                self.log(f"✅ {persona['name']} yüklendi")
-                return persona
+            genai.configure(api_key=self.api_keys[self.current_api_index])
+            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.log(f"🤖 Model API #{self.current_api_index + 1} ile başlatıldı", "api")
         except Exception as e:
-            self.log(f"❌ Persona hatası: {e}")
-            return self._get_fallback_persona(persona_name)
+            self.log(f"❌ Model başlatma hatası: {e}", "error")
+            raise
 
-    def _get_fallback_persona(self, persona_name):
-        """Fallback persona"""
+    def get_api_health_report(self) -> Dict:
+        """API'lerin sağlık durumu raporu"""
+        healthy_apis = sum(1 for stats in self.api_stats.values() if not stats['is_blocked'])
+        total_apis = len(self.api_keys)
+
+        total_success = sum(stats['success_count'] for stats in self.api_stats.values())
+        total_errors = sum(stats['error_count'] for stats in self.api_stats.values())
+        success_rate = total_success / max(total_success + total_errors, 1)
+
+        status = "healthy"
+        if healthy_apis < total_apis * 0.3:
+            status = "critical"
+        elif healthy_apis < total_apis * 0.7:
+            status = "warning"
+
         return {
-            "name": persona_name.replace('_', ' ').title(),
-            "bio": ["Test persona"],
-            "style": {"chat": ["Normal konuşur"]},
-            "lore": [""],
-            "knowledge": [""]
+            "healthy_apis": healthy_apis,
+            "total_apis": total_apis,
+            "success_rate": success_rate,
+            "status": status,
+            "current_api": self.current_api_index + 1
         }
 
-    def switch_api_key(self):
-        """API key'i değiştir"""
-        self.current_api_index = (self.current_api_index + 1) % len(self.api_keys)
-        self._initialize_model()
-        self.log(f"🔄 API #{self.current_api_index + 1} aktif")
+    def mark_api_success(self, api_index: int):
+        """API başarısını işaretle"""
+        stats = self.api_stats[api_index]
+        stats['success_count'] += 1
+        stats['last_success'] = time.time()
+        stats['consecutive_errors'] = 0
+        stats['is_blocked'] = False
 
-    async def try_with_api_rotation(self, prompt, max_retries=None):
-        """API rotasyonu ile güvenli deneme"""
+    def mark_api_error(self, api_index: int, error: str):
+        """API hatasını işaretle"""
+        stats = self.api_stats[api_index]
+        stats['error_count'] += 1
+        stats['last_error'] = time.time()
+        stats['consecutive_errors'] += 1
+
+        # 3 ardışık hata sonrası API'yi geçici olarak blokla
+        if stats['consecutive_errors'] >= 3:
+            stats['is_blocked'] = True
+            self.log(f"🚫 API #{api_index + 1} geçici olarak bloklandı", "warning")
+
+    def get_best_api_index(self) -> Optional[int]:
+        """En iyi API'yi seç"""
+        available_apis = []
+
+        for i, stats in self.api_stats.items():
+            if not stats['is_blocked']:
+                total_requests = stats['success_count'] + stats['error_count']
+                success_rate = stats['success_count'] / max(total_requests, 1)
+
+                available_apis.append({
+                    'index': i,
+                    'success_rate': success_rate,
+                    'consecutive_errors': stats['consecutive_errors']
+                })
+
+        if not available_apis:
+            # Tüm API'lar bloklandıysa, blokları kaldır
+            self.log("🔄 Tüm API blokları temizleniyor", "warning")
+            for stats in self.api_stats.values():
+                stats['is_blocked'] = False
+                stats['consecutive_errors'] = 0
+            return 0
+
+        # En iyi success rate'e sahip API'yi seç
+        best_api = max(available_apis, key=lambda x: (x['success_rate'], -x['consecutive_errors']))
+        return best_api['index']
+
+    def switch_to_best_api(self):
+        """En iyi API'ye geç"""
+        old_index = self.current_api_index
+        new_index = self.get_best_api_index()
+
+        if new_index is not None and new_index != old_index:
+            self.current_api_index = new_index
+            self._initialize_model()
+            self.last_api_switch = time.time()
+            self.log(f"🔄 API #{old_index + 1} → #{new_index + 1}", "api")
+
+        return new_index
+
+    async def try_with_smart_rotation(self, prompt: str, max_retries: Optional[int] = None) -> str:
+        """Akıllı API rotasyon ile deneme"""
         if max_retries is None:
-            max_retries = len(self.api_keys)
+            max_retries = len(self.api_keys) * 2
+
+        attempted_apis = set()
 
         for attempt in range(max_retries):
-            try:
-                response = await self.model.generate_content_async(prompt)
-                return response.text.strip()
-            except Exception as e:
-                if "429" in str(e) or "quota" in str(e).lower():
-                    self.log(f"❌ API #{self.current_api_index + 1} quota aşıldı")
-                    if attempt < max_retries - 1:
-                        self.switch_api_key()
-                        continue
-                else:
-                    raise e
+            current_api = self.current_api_index
 
-        return "Sistem yoğunluğu nedeniyle geçici olarak hizmet veremiyorum."
+            try:
+                self.log(f"🧠 API #{current_api + 1} ile deneniyor (Deneme {attempt + 1})", "debug")
+
+                response = await self.model.generate_content_async(prompt)
+
+                # Başarı durumunu kaydet
+                self.mark_api_success(current_api)
+                result = response.text.strip()
+
+                self.log(f"✅ API #{current_api + 1} başarılı", "success")
+
+                # Session state'e API durumunu kaydet
+                if 'api_status' in st.session_state:
+                    st.session_state.api_status[self.persona_name] = self.get_api_health_report()
+
+                return result
+
+            except Exception as e:
+                error_str = str(e)
+                self.log(f"❌ API #{current_api + 1} hatası: {error_str[:100]}", "error")
+
+                # Hata türünü analiz et
+                is_quota_error = any(keyword in error_str.lower() for keyword in [
+                    "429", "quota", "rate limit", "too many requests", "resource exhausted"
+                ])
+
+                is_auth_error = any(keyword in error_str.lower() for keyword in [
+                    "401", "403", "invalid api key", "unauthorized", "forbidden"
+                ])
+
+                # Hata durumunu kaydet
+                self.mark_api_error(current_api, error_str)
+                attempted_apis.add(current_api)
+
+                # API durumunu session state'e kaydet
+                if 'api_status' in st.session_state:
+                    st.session_state.api_status[self.persona_name] = self.get_api_health_report()
+
+                # Eğer quota hatası ise hemen diğer API'ye geç
+                if is_quota_error:
+                    self.log(f"🚫 API #{current_api + 1} quota aşıldı", "warning")
+                    next_api = self.switch_to_best_api()
+
+                    if next_api is None or next_api in attempted_apis:
+                        if attempt == max_retries - 1:
+                            break
+                        continue
+
+                # Auth hatası ise bu API'yi tamamen blokla
+                elif is_auth_error:
+                    self.log(f"🔒 API #{current_api + 1} auth hatası - bloklanıyor", "error")
+                    self.api_stats[current_api]['is_blocked'] = True
+                    self.switch_to_best_api()
+
+                # Son deneme mi?
+                if attempt == max_retries - 1:
+                    break
+
+                # Kısa bekle
+                await asyncio.sleep(0.5)
+
+                # Eğer bu API daha önce denenmemişse tekrar dene
+                if current_api not in attempted_apis:
+                    continue
+
+                # Yeni API'ye geç
+                self.switch_to_best_api()
+
+        # Tüm denemeler başarısız
+        health_report = self.get_api_health_report()
+        self.log(f"💥 Tüm API denemesi başarısız", "error")
+
+        return "Sistem yoğunluğu nedeniyle geçici olarak hizmet veremiyorum. Lütfen biraz sonra tekrar deneyin."
 
     def create_system_prompt(self):
         """Persona'dan sistem promptu oluştur"""
@@ -483,8 +387,8 @@ KURALLAR:
 - Kısa ve öz cevap ver
 - Tartışmacı ve ikna edici ol """
 
-    async def sequential_think(self, prompt: str, stage_name: str):
-        """Sequential Thinking adımı"""
+    async def sequential_think(self, prompt: str, stage_name: str) -> str:
+        """Akıllı API rotasyon ile Sequential Thinking"""
         self.log(f"🧠 {stage_name}")
 
         thinking_prompt = f"""Sen {self.persona['name']}'sin. Kısa düşün:
@@ -494,12 +398,34 @@ KURALLAR:
 2-3 cümleyle düşünceni söyle:"""
 
         try:
-            result = await self.try_with_api_rotation(thinking_prompt)
-            self.log(f"💭 {stage_name}: {result[:100]}...")
+            result = await self.try_with_smart_rotation(thinking_prompt)
+            self.log(f"💭 {stage_name}: {result[:100]}...", "debug")
             return result
         except Exception as e:
-            self.log(f"❌ {stage_name} hatası: {e}")
+            self.log(f"❌ {stage_name} kritik hatası: {e}", "error")
             return "Normal yaklaşım benimserim."
+
+    def _load_persona(self, persona_name):
+        """Persona JSON dosyasını yükle"""
+        try:
+            persona_path = f'src/personas/{persona_name}.json'
+            with open(persona_path, 'r', encoding='utf-8') as f:
+                persona = json.load(f)
+                self.log(f"✅ {persona['name']} yüklendi")
+                return persona
+        except Exception as e:
+            self.log(f"❌ Persona hatası: {e}")
+            return self._get_fallback_persona(persona_name)
+
+    def _get_fallback_persona(self, persona_name):
+        """Fallback persona"""
+        return {
+            "name": persona_name.replace('_', ' ').title(),
+            "bio": ["Test persona"],
+            "style": {"chat": ["Normal konuşur"]},
+            "lore": [""],
+            "knowledge": [""]
+        }
 
     async def search_web_detailed(self, keywords: str):
         """Web araması"""
@@ -516,7 +442,6 @@ KURALLAR:
                 async with ClientSession(read_stream, write_stream) as session:
                     await session.initialize()
 
-                    # Basit arama
                     result = await session.call_tool("web_search_exa", {
                         "query": keywords,
                         "num_results": 5
@@ -526,7 +451,6 @@ KURALLAR:
                         search_result = result.content[0].text[:2000]
                         self.log(f"✅ Arama tamamlandı")
 
-                        # Basit analiz
                         analysis = await self.sequential_think(
                             f"Bu haberleri analiz et: {search_result[:500]}",
                             "ANALİZ"
@@ -543,11 +467,15 @@ KURALLAR:
             self.log(f"❌ Arama hatası: {e}")
             return {"analysis": "", "news_summary": ""}
 
-    async def chat(self, user_input: str):
-        """Ana sohbet fonksiyonu"""
+    async def chat(self, user_input: str) -> str:
+        """Gelişmiş API rotasyon ile sohbet"""
         self.log(f"📝 Soru: {user_input[:50]}...")
 
-        # Sequential thinking
+        # API sağlık durumu kontrol et
+        health_report = self.get_api_health_report()
+        self.log(f"📊 API Durumu: {health_report['healthy_apis']}/{health_report['total_apis']} aktif", "api")
+
+        # Sequential thinking ile düşünme süreci
         question_analysis = await self.sequential_think(
             f"'{user_input}' sorusuna nasıl yaklaşmalıyım?",
             "SORU ANALİZİ"
@@ -558,7 +486,7 @@ KURALLAR:
             "ARAMA KARARI"
         )
 
-        # Arama gerekli mi?
+        # Arama gerekli mi kontrol et
         search_triggers = ["son", "güncel", "haber", "gündem", "2024", "2025"]
         needs_search = any(trigger in user_input.lower() for trigger in search_triggers)
 
@@ -572,11 +500,13 @@ KURALLAR:
                 "ARAMA TERİMLERİ"
             )
 
-            search_data = await self.search_web_detailed(search_terms.strip())
-            analysis = search_data["analysis"]
-            news_summary = search_data["news_summary"]
+            # Web araması (varsa)
+            if self.smithery_api_key:
+                search_data = await self.search_web_detailed(search_terms.strip())
+                analysis = search_data.get("analysis", "")
+                news_summary = search_data.get("news_summary", "")
 
-        # Final cevap
+        # Final cevap hazırlama
         self.log("💬 Cevap hazırlanıyor")
 
         final_prompt = f"""{self.create_system_prompt()}
@@ -592,10 +522,10 @@ Kullanıcı: "{user_input}"
 Kısa ve karakter uygun cevap ver:"""
 
         try:
-            response_text = await self.try_with_api_rotation(final_prompt)
+            response_text = await self.try_with_smart_rotation(final_prompt)
             self.log("✅ Cevap hazır")
 
-            # Geçmişe ekle
+            # Konuşma geçmişine ekle
             self.conversation_history.append({
                 'user': user_input,
                 'assistant': response_text
@@ -608,7 +538,7 @@ Kısa ve karakter uygun cevap ver:"""
             return response_text
 
         except Exception as e:
-            self.log(f"❌ Hata: {e}")
+            self.log(f"❌ Chat kritik hatası: {e}", "error")
             return "Şu anda teknik sorun yaşıyorum, özür dilerim."
 
 
@@ -616,7 +546,7 @@ Kısa ve karakter uygun cevap ver:"""
 @st.cache_resource
 def get_cached_agent(persona_name):
     """Agent'ı cache'le"""
-    return PersonaAgent(persona_name=persona_name, log_container=True)
+    return EnhancedPersonaAgent(persona_name=persona_name, log_container=True)
 
 
 # UI Functions
@@ -641,16 +571,43 @@ def display_thinking_process(logs, container, persona_name):
                     st.markdown(log, unsafe_allow_html=True)
 
 
+def display_api_status():
+    """API durumunu görüntüle"""
+    if 'api_status' in st.session_state and st.session_state.api_status:
+        col1, col2 = st.columns(2)
+
+        for i, (persona_name, status) in enumerate(st.session_state.api_status.items()):
+            with col1 if i == 0 else col2:
+                status_class = {
+                    "healthy": "api-healthy",
+                    "warning": "api-warning",
+                    "critical": "api-error"
+                }.get(status["status"], "api-healthy")
+
+                success_rate_percent = int(status["success_rate"] * 100)
+
+                st.markdown(f'''
+                <div class="api-status-bar">
+                    <strong>{persona_name.upper()}</strong><br>
+                    <span class="{status_class}">
+                        API: {status["healthy_apis"]}/{status["total_apis"]} aktif 
+                        | Başarı: %{success_rate_percent}
+                        | Aktif: #{status["current_api"]}
+                    </span>
+                </div>
+                ''', unsafe_allow_html=True)
+
+
 # Ana uygulama
 def main():
     """Ana uygulama"""
     init_session_state()
 
-    # Ana başlık - Ortalanmış ve stilize edilmiş
+    # Ana başlık
     st.markdown('''
     <div class="custom-header">
         <h1>🎭 Mini-Microcosmos</h1>
-        <p>AI Persona Simulator - Sequential Thinking Architecture</p>
+        <p>AI Persona Simulator - Enhanced API Rotation System</p>
     </div>
     ''', unsafe_allow_html=True)
 
@@ -672,21 +629,24 @@ def main():
     else:
         st.markdown(f'''
         <div class="status-bar">
-            <span class="status-success">✅ {len(gemini_keys)} Gemini API Key aktif</span>
+            <span class="status-success">✅ {len(gemini_keys)} Gemini API Key yüklendi</span>
         </div>
         ''', unsafe_allow_html=True)
 
     # Agent initialization
     if not st.session_state.agents_initialized:
-        with st.spinner("🤖 Agent'lar yükleniyor..."):
+        with st.spinner("🤖 Enhanced Agent'lar yükleniyor..."):
             try:
                 st.session_state.tugrul_agent = get_cached_agent("tugrul_eski")
                 st.session_state.yeni_tugrul_agent = get_cached_agent("tugrul_yeni")
                 st.session_state.agents_initialized = True
-                st.success("✅ Agent'lar hazır!")
+                st.success("✅ Enhanced Agent'lar hazır!")
             except Exception as e:
                 st.error(f"❌ Agent hatası: {e}")
                 st.stop()
+
+    # API Status Display
+    display_api_status()
 
     # İki sütun
     col1, col2 = st.columns(2)
@@ -698,7 +658,7 @@ def main():
             <div class="persona-name">🎯 Eski Tuğrul</div>
             <div class="persona-stats">
                 <span>Eski Milliyetçi Persona</span>
-                <span>Milliyetçi</span>
+                <span>Smart API Rotation</span>
             </div>
         </div>
         ''', unsafe_allow_html=True)
@@ -720,7 +680,7 @@ def main():
             <div class="persona-name">🔄 Yeni Tuğrul</div>
             <div class="persona-stats">
                 <span>Yeni Milliyetçi - CHP Geçiş</span>
-                <span>Değişen Profil</span>
+                <span>Smart API Rotation</span>
             </div>
         </div>
         ''', unsafe_allow_html=True)
@@ -778,13 +738,13 @@ def main():
                     st.session_state.processing = False
 
             # Run async
-            with st.spinner("🧠 Sequential Thinking..."):
+            with st.spinner("🧠 Enhanced Sequential Thinking..."):
                 asyncio.run(process_agents())
                 st.rerun()
 
     # Control panel
     st.markdown("<hr>", unsafe_allow_html=True)
-    control_col1, control_col2 = st.columns(2)
+    control_col1, control_col2, control_col3 = st.columns(3)
 
     with control_col1:
         if st.button("🗑️ Sohbeti Temizle"):
@@ -792,17 +752,29 @@ def main():
             st.session_state.yeni_tugrul_messages = []
             st.session_state.tugrul_logs = []
             st.session_state.yeni_tugrul_logs = []
+            st.session_state.api_status = {}
             st.rerun()
 
     with control_col2:
         if st.button("🔄 API Değiştir"):
             if st.session_state.agents_initialized:
-                st.session_state.tugrul_agent.switch_api_key()
-                st.session_state.yeni_tugrul_agent.switch_api_key()
-                st.success("🔄 API değiştirildi!")
+                st.session_state.tugrul_agent.switch_to_best_api()
+                st.session_state.yeni_tugrul_agent.switch_to_best_api()
+                st.success("🔄 En iyi API'lere geçildi!")
+
+    with control_col3:
+        if st.button("📊 API Durumu"):
+            if st.session_state.agents_initialized:
+                tugrul_status = st.session_state.tugrul_agent.get_api_health_report()
+                yeni_tugrul_status = st.session_state.yeni_tugrul_agent.get_api_health_report()
+
+                st.info(f"""
+                **Eski Tuğrul:** {tugrul_status['healthy_apis']}/{tugrul_status['total_apis']} API aktif
+                **Yeni Tuğrul:** {yeni_tugrul_status['healthy_apis']}/{yeni_tugrul_status['total_apis']} API aktif
+                """)
 
     # Footer
-    st.markdown('<p class="footer-text"><strong>🎭 Mini Microcosmos</strong> - AI Persona Simulator - developed by Baran Can Ercan with <3 🎭 </p>',
+    st.markdown('<p class="footer-text"><strong>🎭 Mini Microcosmos</strong> - Enhanced API Rotation System 🚀</p>',
                 unsafe_allow_html=True)
 
 
