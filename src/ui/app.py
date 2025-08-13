@@ -148,8 +148,8 @@ class EnhancedPersonaAgent:
         if main_key:
             api_keys.append(main_key)
 
-        # Numaralı keyler (1-14)
-        for i in range(1, 15):
+        # Numaralı keyler (1-16)
+        for i in range(1, 17):
             key = os.getenv(f"GEMINI_API_KEY_{i}")
             if key:
                 api_keys.append(key)
