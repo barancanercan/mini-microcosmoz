@@ -11,8 +11,16 @@ enableXsrfProtection = false
 gatherUsageStats = false
 
 [theme]
-primaryColor = "#00d4ff"
-backgroundColor = "#0e1117"
-secondaryBackgroundColor = "#262730"
-textColor = "#fafafa"
-font = "sans serif"
+# Modern dark theme - minimalist and mobile-friendly
+primaryColor = "#6366f1"          # Modern indigo for buttons and highlights
+backgroundColor = "#0f172a"       # Deep dark background (slate-900)
+secondaryBackgroundColor = "#1e293b"  # Slightly lighter (slate-800)
+textColor = "#f8fafc"             # Clean white text (slate-50)
+
+# Typography - System fonts for better performance
+font = "sans serif"               # Clean system fonts
+
+[client]
+# Better performance settings
+showErrorDetails = false
+toolbarMode = "minimal"
